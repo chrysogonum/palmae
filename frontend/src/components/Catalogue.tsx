@@ -12,22 +12,24 @@ export function Catalogue({ onSeeOnTree, filter }: {
   const [taxa, setTaxa] = useState<TaxonListItem[]>([])
   const [q, setQ] = useState('')
   const [sub, setSub] = useState<string | null>(null)
+  const [genus, setGenus] = useState<string | null>(null)  // exact-genus filter (from a genus-tree click)
   const [slug, setSlug] = useState<string | null>(null)
 
   useEffect(() => { api.taxa().then(setTaxa).catch(() => {}) }, [])
-  // an external filter request (e.g. clicking a genus on the tree) → search that genus
+  // an external filter request (clicking a genus on the tree) → filter to exactly that genus
   useEffect(() => {
-    if (filter) { setQ(filter.q); setSub(null); setSlug(null) }
+    if (filter) { setGenus(filter.q); setQ(''); setSub(null); setSlug(null) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter?.n])
 
   const filtered = useMemo(() => {
     const like = q.toLowerCase()
     return taxa.filter((t) =>
+      (!genus || t.genus === genus) &&
       (!sub || t.subfamily === sub) &&
       (!like || t.latin.toLowerCase().includes(like) || (t.genus ?? '').toLowerCase().includes(like)),
     )
-  }, [taxa, q, sub])
+  }, [taxa, q, sub, genus])
   const legendSubs = useMemo(
     () => [...new Set(filtered.map((t) => t.subfamily).filter(Boolean) as string[])].sort(),
     [filtered])
@@ -37,15 +39,26 @@ export function Catalogue({ onSeeOnTree, filter }: {
       <aside style={{ borderRight: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--hairline)' }}>
           <input
-            value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search 2,591 palm species…"
+            value={q} onChange={(e) => { setQ(e.target.value); setGenus(null) }} placeholder="Search 2,591 palm species…"
             style={{
               width: '100%', background: 'var(--panel)', border: '1px solid var(--hairline)',
               borderRadius: 8, color: 'var(--ink)', padding: '9px 12px', fontSize: 14, fontFamily: 'var(--font-body)',
             }}
           />
+          {genus && (
+            <button onClick={() => setGenus(null)} title="Clear genus filter" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 9, cursor: 'pointer',
+              background: 'var(--panel)', border: '1px solid var(--gold)', borderRadius: 999,
+              padding: '4px 10px', fontSize: 12.5, color: 'var(--ink)',
+            }}>
+              <span style={{ color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase' }}>genus</span>
+              <em style={{ fontStyle: 'italic' }}>{genus}</em>
+              <span style={{ color: 'var(--gold)' }}>✕</span>
+            </button>
+          )}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 9 }}>
-            <Chip on={!sub} onClick={() => setSub(null)}>All</Chip>
-            {SUBFAMILIES.map((s) => <Chip key={s} on={sub === s} onClick={() => setSub(sub === s ? null : s)}>{s}</Chip>)}
+            <Chip on={!sub} onClick={() => { setSub(null); setGenus(null) }}>All</Chip>
+            {SUBFAMILIES.map((s) => <Chip key={s} on={sub === s} onClick={() => { setSub(sub === s ? null : s); setGenus(null) }}>{s}</Chip>)}
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-faint)', marginTop: 9 }}>
             {filtered.length.toLocaleString()} species
