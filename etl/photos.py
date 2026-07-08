@@ -16,7 +16,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, select, text, update
 
 from app import models as m
 from app.db import SessionLocal
@@ -40,7 +40,7 @@ def _fetch(pair: tuple[int, str]) -> tuple[int, dict | None]:
     for attempt in range(2):
         _throttle()
         try:
-            return sid, inat.fetch_taxon(name)
+            return sid, inat.fetch_media(name)
         except Exception:  # noqa: BLE001 (rate-limit / transient) — one retry
             if attempt == 0:
                 time.sleep(2.0)
@@ -69,20 +69,22 @@ def run(limit: int | None = None) -> None:
             done += 1
             if res:
                 matched += 1
-                p = res.get("photo")
-                if p and p.get("url"):
+                if res.get("url"):
                     photos.append({
-                        "species_id": sid, "url": p["url"], "kind": "photo",
-                        "attribution": p.get("attribution"), "license": p.get("license"),
+                        "species_id": sid, "url": res["url"], "kind": "photo",
+                        "attribution": res.get("attribution"), "license": res.get("license"),
+                        "source_url": res.get("source_url"),
                         "source": "iNaturalist", "is_default": True})
                 cn = res.get("common_name")
                 if cn and sid in common_null:
                     common_updates.append((sid, cn))
             if done % 300 == 0:
-                print(f"  {done}/{len(keyed)} — {len(photos)} CC photos, "
+                obs = sum(1 for p in photos if "/observations/" in (p.get("source_url") or ""))
+                print(f"  {done}/{len(keyed)} — {len(photos)} CC photos ({obs} → observations), "
                       f"{len(common_updates)} common names")
 
     with SessionLocal() as s:
+        s.execute(text("ALTER TABLE photo ADD COLUMN IF NOT EXISTS source_url varchar"))
         s.execute(delete(m.Photo).where(m.Photo.source == "iNaturalist"))
         s.flush()
         for i in range(0, len(photos), 500):

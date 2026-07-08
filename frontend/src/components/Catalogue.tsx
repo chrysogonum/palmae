@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import type { TaxonListItem, TaxonDetail } from '../api/types'
 import { SubfamilyRiskLegend } from './Legend'
+import { RangeMap } from './RangeMap'
 
 const SUBFAMILIES = ['Arecoideae', 'Coryphoideae', 'Calamoideae', 'Ceroxyloideae', 'Nypoideae']
 
@@ -136,17 +137,34 @@ export function Detail({ slug, onSeeOnTree }: {
   const c = d.conservation
   return (
     <div style={{ overflowY: 'auto', padding: '26px 32px', maxWidth: 720 }}>
-      {d.photo && photoOk && (
-        <figure style={{ margin: '0 0 20px' }}>
+      {d.photo && photoOk && (() => {
+        const img = (
           <img src={d.photo.url} alt={d.latin} loading="lazy" onError={() => setPhotoOk(false)} style={{
             width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 10, display: 'block',
-            border: '1px solid var(--hairline)',
+            border: '1px solid var(--hairline)', cursor: d.photo.sourceUrl ? 'pointer' : 'default',
           }} />
-          <figcaption style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', marginTop: 6, lineHeight: 1.4 }}>
-            {d.photo.attribution || `${d.photo.license ?? 'CC'} licensed`} · iNaturalist
-          </figcaption>
-        </figure>
-      )}
+        )
+        const onObs = (d.photo.sourceUrl ?? '').includes('/observations/')
+        return (
+          <figure style={{ margin: '0 0 20px' }}>
+            {d.photo.sourceUrl
+              ? <a href={d.photo.sourceUrl} target="_blank" rel="noreferrer"
+                  title={onObs ? 'See this observation on iNaturalist' : 'See this species on iNaturalist'}
+                  style={{ display: 'block' }}>{img}</a>
+              : img}
+            <figcaption style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', marginTop: 6, lineHeight: 1.4 }}>
+              {d.photo.attribution || `${d.photo.license ?? 'CC'} licensed`}
+              {' · '}
+              {d.photo.sourceUrl
+                ? <a href={d.photo.sourceUrl} target="_blank" rel="noreferrer"
+                    style={{ color: 'var(--gold)', textDecoration: 'none', borderBottom: '1px solid rgba(217,178,90,.4)' }}>
+                    {onObs ? 'observation on iNaturalist ↗' : 'iNaturalist ↗'}
+                  </a>
+                : 'iNaturalist'}
+            </figcaption>
+          </figure>
+        )
+      })()}
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
         {d.subfamily} · {d.tribe ?? '—'}
       </div>
@@ -183,14 +201,27 @@ export function Detail({ slug, onSeeOnTree }: {
       </dl>
 
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--ink-faint)', marginBottom: 7 }}>
-        Native range · {d.nativeRegions.length} TDWG region{d.nativeRegions.length === 1 ? '' : 's'}
+        Native range · {d.nativeRegions.length} region{d.nativeRegions.length === 1 ? '' : 's'}
+        {d.introducedRegions.length > 0 && ` · ${d.introducedRegions.length} introduced`}
       </div>
+      {(d.nativeRegions.length > 0 || d.introducedRegions.length > 0) && (
+        <div style={{ marginBottom: 9 }}>
+          <RangeMap
+            native={d.nativeRegions.map((r) => r.code)}
+            introduced={d.introducedRegions.map((r) => r.code)}
+            color={d.color}
+          />
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 4 }}>
+            filled = native{d.introducedRegions.length > 0 ? ' · dashed = introduced' : ''} · WGSRPD level-3 · hover for names
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
         {d.nativeRegions.map((r) => (
-          <span key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 7px', border: '1px solid var(--hairline)', borderRadius: 5, color: 'var(--ink-muted)' }}>{r}</span>
+          <span key={r.code} title={`${r.code} · native`} style={{ fontSize: 11.5, padding: '3px 8px', border: '1px solid var(--hairline)', borderRadius: 5, color: 'var(--ink-muted)' }}>{r.name}</span>
         ))}
         {d.introducedRegions.map((r) => (
-          <span key={r} title="introduced" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 7px', border: '1px dashed var(--hairline)', borderRadius: 5, color: 'var(--ink-faint)' }}>{r}</span>
+          <span key={r.code} title={`${r.code} · introduced`} style={{ fontSize: 11.5, padding: '3px 8px', border: '1px dashed var(--hairline)', borderRadius: 5, color: 'var(--ink-faint)' }}>{r.name}</span>
         ))}
       </div>
 

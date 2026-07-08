@@ -60,6 +60,53 @@ def fetch_taxon(scientific_name: str) -> dict | None:
     return None
 
 
+_CC_LICENSES = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nc-sa,cc-by-nd,cc-by-nc-nd"
+
+
+def _obs_media(scientific_name: str) -> dict | None:
+    """Best research-grade CC-photo observation for a species → its photo + the URL
+    of that observation on iNaturalist."""
+    r = requests.get(f"{INAT}/observations", params={
+        "taxon_name": scientific_name, "quality_grade": "research", "photos": "true",
+        "photo_license": _CC_LICENSES, "order_by": "votes", "order": "desc", "per_page": 5,
+    }, headers=_HEADERS, timeout=30)
+    r.raise_for_status()
+    for o in r.json().get("results", []):
+        for ph in (o.get("photos") or []):
+            lic = (ph.get("license_code") or "").lower()
+            url = ph.get("url")
+            if lic in _CC_OK and url:
+                return {
+                    "url": url.replace("square", "medium"),
+                    "attribution": ph.get("attribution"), "license": lic.upper(),
+                    "source_url": f"https://www.inaturalist.org/observations/{o.get('id')}",
+                    "common_name": (o.get("taxon") or {}).get("preferred_common_name"),
+                }
+    return None
+
+
+def fetch_media(scientific_name: str) -> dict | None:
+    """A CC photo + where it lives on iNaturalist, + common name. Prefers a research-
+    grade observation photo (linked to that observation); falls back to the taxon's
+    curated default photo (linked to the taxon page). Returns None on no name match."""
+    try:
+        m = _obs_media(scientific_name)
+    except requests.RequestException:
+        m = None
+    if m:
+        return m
+    t = fetch_taxon(scientific_name)  # fallback: taxon default photo + common name
+    if not t:
+        return None
+    p = t.get("photo")
+    if p:
+        return {"url": p["url"], "attribution": p["attribution"], "license": p["license"],
+                "source_url": f"https://www.inaturalist.org/taxa/{t.get('inat_taxon_id')}",
+                "common_name": t.get("common_name")}
+    return {"url": None, "attribution": None, "license": None, "source_url": None,
+            "common_name": t.get("common_name")}
+
+
 def fetch_summaries(ids: list[int]) -> dict[int, dict]:
     """Wikipedia blurb + source article URL for many iNat taxon ids, batched 30 at a
     time (detail endpoint). Keyed by iNat id: {id: {"blurb": str, "url": str|None}}."""

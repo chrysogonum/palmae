@@ -71,20 +71,27 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   const onBrushRegions = useCallback((codes: string[] | null) => {
     setHighlight(codes ? new Set(codes) : null)
   }, [])
+  // Toggle trees while KEEPING the selected species: re-trace it on the species tree,
+  // or highlight its genus on the genus tree. The selection (card) persists across
+  // toggles; clearSelection is the explicit way out.
   const switchTree = useCallback((src: 'species' | 'genera') => {
-    const activeSlug = locate ?? selected  // the species currently in focus, if any
     setTreeSource(src)
-    setFocus(null); setLocate(null); setRegion(null)
-    setTreeHighlight(null); setHighlight(null); setSelected(null)
-    // carry a focused species over to the genus tree as its genus (slug = "genus-epithet")
-    if (src === 'genera' && activeSlug) {
-      const g = activeSlug.split('-')[0]
+    setFocus(null); setRegion(null); setTreeHighlight(null)
+    if (selected && src === 'genera') {
+      const g = selected.split('-')[0]              // slug = "genus-epithet"
       const genus = g.charAt(0).toUpperCase() + g.slice(1)
+      setLocate(null)
       setLocateGenus((prev) => ({ genus, n: (prev?.n ?? 0) + 1 }))
+    } else if (selected) {
+      setLocateGenus(null); setLocate(selected); setHighlight(regionsFor([selected]))
     } else {
-      setLocateGenus(null)
+      setLocate(null); setLocateGenus(null); setHighlight(null)
     }
-  }, [locate, selected])
+  }, [selected, regionsFor])
+  const clearSelection = useCallback(() => {
+    setSelected(null); setLocate(null); setLocateGenus(null)
+    setHighlight(null); setTreeHighlight(null); setRegion(null); setFocus(null)
+  }, [])
   const locateGenusByName = useCallback((genus: string) => {
     setLocateGenus((g) => ({ genus, n: (g?.n ?? 0) + 1 }))
   }, [])
@@ -95,7 +102,7 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   }, [regionsFor])
 
   const locateBySlug = useCallback((slug: string) => {
-    setFocus(null); setRegion(null); setTreeHighlight(null)
+    setFocus(null); setRegion(null); setTreeHighlight(null); setLocateGenus(null)
     setLocate(slug); setSelected(slug); setHighlight(regionsFor([slug]))
   }, [regionsFor])
   const locateSpecies = useCallback((r: SearchResult) => locateBySlug(r.slug), [locateBySlug])
@@ -166,7 +173,7 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
           background: 'var(--ground)', borderLeft: '1px solid var(--hairline)',
           boxShadow: '-18px 0 40px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column',
         }}>
-          <button onClick={() => setSelected(null)} style={{ ...btn, alignSelf: 'flex-end', margin: 10 }}>Close ✕</button>
+          <button onClick={clearSelection} title="Clear selection" style={{ ...btn, alignSelf: 'flex-end', margin: 10 }}>Clear selection ✕</button>
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}><Detail slug={selected} onSeeOnTree={onSeeOnTree} /></div>
         </aside>
       )}

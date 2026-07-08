@@ -276,4 +276,6 @@ class Photo(Base):
     attribution: Mapped[str | None] = mapped_column(String)
     license: Mapped[str | None] = mapped_column(String)
     source: Mapped[str | None] = mapped_column(String)
+    # where the photo lives on iNaturalist — its observation, else the taxon page.
+    source_url: Mapped[str | None] = mapped_column(String)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)

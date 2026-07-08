@@ -26,7 +26,9 @@ export interface TaxonListItem {
   nRegions: number; endemic: boolean; hasTraits: boolean; onTree: boolean
   thumb: string | null
 }
-export interface Photo { url: string; attribution: string | null; license: string | null }
+export interface Photo {
+  url: string; attribution: string | null; license: string | null; sourceUrl: string | null
+}
 
 export interface Coverage {
   total_species: number; traits_pct: number; ranges_pct: number
@@ -47,9 +49,10 @@ export interface TaxonDetail {
   genus: string | null; tribe: string | null; subfamily: string | null; isHybrid: boolean
   color: string; glance: GlanceRow[]; conservation: Conservation
   climate: ClimateProfile | null; photo: Photo | null
-  nativeRegions: string[]; introducedRegions: string[]; onTree: boolean
+  nativeRegions: RegionRef[]; introducedRegions: RegionRef[]; onTree: boolean
   traits: Record<string, string | number>
 }
+export interface RegionRef { code: string; name: string }
 
 export interface PalmLinePoint {
   sp: Slug; lon: number; lat: number; cmmt: number; sub: string | null; native: boolean

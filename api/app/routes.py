@@ -24,6 +24,22 @@ def _square(url: str | None) -> str | None:
     return url.replace("/medium.", "/square.") if url else None
 
 
+def _load_tdwg_names() -> dict[str, str]:
+    """TDWG level-3 code → readable botanical-country name (from the shared geometry)."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[2] / "data" / "tdwg_level3.geojson"
+    try:
+        feats = json.loads(path.read_text())["features"]
+        return {f["properties"]["LEVEL3_COD"]: f["properties"]["LEVEL3_NAM"]
+                for f in feats if f["properties"].get("LEVEL3_COD")}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+_TDWG_NAMES = _load_tdwg_names()
+
+
 # --------------------------------------------------------------------------- #
 # meta: sources, search
 # --------------------------------------------------------------------------- #
@@ -400,8 +416,8 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
         select tdwg_code, origin from range_region r join taxon t on t.species_id=r.species_id
         where t.slug=:slug order by origin, tdwg_code
     """), {"slug": slug}).all()
-    native = [c for c, o in regions if o == "native"]
-    introduced = [c for c, o in regions if o == "introduced"]
+    native = [{"code": c, "name": _TDWG_NAMES.get(c, c)} for c, o in regions if o == "native"]
+    introduced = [{"code": c, "name": _TDWG_NAMES.get(c, c)} for c, o in regions if o == "introduced"]
 
     on_tree = db.execute(text(
         "select 1 from phylogeny_node where species_id=:sid limit 1"), {"sid": sid}).scalar()
@@ -444,9 +460,9 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
         }
 
     ph = db.execute(text(
-        "select url, attribution, license from photo where species_id=:sid "
+        "select url, attribution, license, source_url from photo where species_id=:sid "
         "and source='iNaturalist' order by is_default desc limit 1"), {"sid": sid}).first()
-    photo = {"url": ph[0], "attribution": ph[1], "license": ph[2]} if ph else None
+    photo = {"url": ph[0], "attribution": ph[1], "license": ph[2], "sourceUrl": ph[3]} if ph else None
 
     return {
         "slug": slug, "latin": sci, "authority": auth, "common": common,
