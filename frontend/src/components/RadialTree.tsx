@@ -14,13 +14,39 @@ type HNode = d3.HierarchyPointNode<TreeNode> & { _sub?: string | null }
 type LinkSel = d3.Selection<SVGPathElement, d3.HierarchyLink<TreeNode>, SVGGElement, unknown>
 type TipSel = d3.Selection<SVGCircleElement, HNode, SVGGElement, unknown>
 
+export type BranchStyle = 'angled' | 'straight' | 'curved'
+
+// Branch-shape carries no biological meaning (only topology + radius do), so we offer
+// three renderings of the same tree. 'angled' is the systematics convention (radial
+// spoke + arc at the node, as in iTOL/FigTree); 'straight' is a plain slanted spoke;
+// 'curved' is the decorative Bézier. The link datum's source/target are laid-out nodes.
+const P2 = Math.PI / 2
+function branchPath(style: BranchStyle): (l: d3.HierarchyLink<TreeNode>) => string {
+  if (style === 'curved') {
+    const gen = d3.linkRadial<unknown, HNode>().angle((d) => d.x).radius((d) => d.y)
+    return (l) => gen(l as never) as string
+  }
+  return (l) => {
+    const s = l.source as HNode, t = l.target as HNode
+    const a0 = s.x, r0 = s.y, a1 = t.x, r1 = t.y
+    const c0 = Math.cos(a0 - P2), n0 = Math.sin(a0 - P2)
+    const c1 = Math.cos(a1 - P2), n1 = Math.sin(a1 - P2)
+    if (style === 'straight') return `M${r0 * c0},${r0 * n0}L${r1 * c1},${r1 * n1}`
+    // angled: move to parent, arc along the parent radius to the child's angle, spoke out
+    return `M${r0 * c0},${r0 * n0}`
+      + (a1 === a0 ? '' : `A${r0},${r0} 0 0 ${a1 > a0 ? 1 : 0} ${r0 * c1},${r0 * n1}`)
+      + `L${r1 * c1},${r1 * n1}`
+  }
+}
+
 /** The phylogeny anchor: a radial cladogram.
  *  - source='species' → the Faurby 2016 all-species supertree (brush→slugs, click a
  *    branch→focus, click a tip→select, locate/highlight a species).
  *  - source='genera'  → the Yao 2023 plastid genus backbone (modern, bootstrap-
  *    supported): brush→regions, tips are genera, hover shows support. */
-export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, locateGenus, highlightSlugs }: {
+export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, locateGenus, highlightSlugs }: {
   source?: 'species' | 'genera'
+  branchStyle?: BranchStyle
   onBrush: (slugs: string[] | null) => void
   onBrushRegions?: (codes: string[] | null) => void
   onSelect: (slug: string) => void
@@ -32,7 +58,9 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
 }) {
   const wrap = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
-  const store = useRef<{ root: HNode; links: LinkSel; tips: TipSel; reset: () => void } | null>(null)
+  const store = useRef<{ root: HNode; links: LinkSel; hit: LinkSel; tips: TipSel; reset: () => void } | null>(null)
+  const styleRef = useRef(branchStyle)
+  styleRef.current = branchStyle
   const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null)
   const [ready, setReady] = useState(false)
   // What the tree should fall back to on mouse-out: a selected region's species
@@ -63,7 +91,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
       const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
       const g = svg.append('g').attr('transform', `translate(${W / 2},${H / 2})`)
-      const linkGen = d3.linkRadial<unknown, HNode>().angle((d) => d.x).radius((d) => d.y)
+      const linkGen = branchPath(styleRef.current)
 
       const links: LinkSel = g.selectAll<SVGPathElement, d3.HierarchyLink<TreeNode>>('path.lk')
         .data(root.links()).join('path').attr('class', 'lk').attr('fill', 'none')
@@ -108,7 +136,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
           }
         }
       }
-      store.current = { root, links, tips, reset }
+      store.current = { root, links, hit, tips, reset }
       setReady(true)  // signal the locate/highlight effect to (re)apply now the tree exists
 
       const highlightClade = (clade: HNode) => {
@@ -173,6 +201,15 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
     })
     return () => { cancelled = true }
   }, [source, onBrush, onBrushRegions, onSelect, onFocus, onGenusClick])
+
+  // restyle branches in place (no rebuild) when the shape toggle changes
+  useEffect(() => {
+    const s = store.current
+    if (!s) return
+    const gen = branchPath(branchStyle)
+    s.links.attr('d', gen as never)
+    s.hit.attr('d', gen as never)
+  }, [branchStyle, ready])
 
   // search-to-locate (single species) and region → tree (many species): trace the
   // path(s) to the root and mark the tips. locate wins if both are set.
