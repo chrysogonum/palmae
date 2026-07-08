@@ -224,14 +224,19 @@ DATA_SOURCES = [
 
     # --- Media & descriptions -------------------------------------------------
     {"id": "inaturalist", "name": "iNaturalist",
-     "role": "CC-licensed species photos (not yet displayed)", "license": "CC0 / CC-BY / CC-BY-NC (per image)",
-     "note": "The intended source for a representative Creative-Commons-licensed photograph per species — "
-             "credited to its observer, via the public iNaturalist taxa API, with all-rights-reserved "
-             "images skipped. Not yet integrated: the app currently shows no photographs.",
+     "role": "species photos · common names", "license": "CC0 / CC-BY / CC-BY-NC / CC-BY-SA (per image)",
+     "note": "A representative Creative-Commons-licensed photograph per species — credited to its "
+             "observer, via the public iNaturalist taxa API, with all-rights-reserved images skipped — "
+             "plus a common name where the taxon record has one. About a third of palm species carry a "
+             "usable CC photo; the rest show a coloured subfamily marker. "
+             "NOTE ON LINK ROT: photos are hot-linked from iNaturalist's open-data CDN, not copied or "
+             "re-hosted here, so an occasional image can break if its observer removes it or iNaturalist "
+             "changes the URL. This keeps attribution with the source and adds no storage, at the cost of "
+             "that small permanence risk.",
      "authors": "iNaturalist community",
      "year": 2024,
      "title": "iNaturalist (Arecaceae, taxon 48867)",
-     "venue": "iNaturalist.org",
+     "venue": "iNaturalist.org · open-data CDN",
      "doi": None,
      "url": "https://www.inaturalist.org/taxa/48867-Arecaceae"},
     {"id": "wikipedia", "name": "Wikipedia",

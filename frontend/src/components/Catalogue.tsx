@@ -14,6 +14,7 @@ export function Catalogue({ onSeeOnTree, filter }: {
   const [sub, setSub] = useState<string | null>(null)
   const [genus, setGenus] = useState<string | null>(null)  // exact-genus filter (from a genus-tree click)
   const [slug, setSlug] = useState<string | null>(null)
+  const [brokenThumbs, setBrokenThumbs] = useState<Set<string>>(new Set())
 
   useEffect(() => { api.taxa().then(setTaxa).catch(() => {}) }, [])
   // an external filter request (clicking a genus on the tree) → filter to exactly that genus
@@ -76,10 +77,12 @@ export function Catalogue({ onSeeOnTree, filter }: {
               <span style={{
                 width: 30, height: 30, flex: '0 0 auto', borderRadius: 6, overflow: 'hidden',
                 display: 'grid', placeItems: 'center',
-                boxShadow: t.thumb ? `0 0 0 1.5px ${t.color}` : 'none',
+                boxShadow: t.thumb && !brokenThumbs.has(t.slug) ? `0 0 0 1.5px ${t.color}` : 'none',
               }}>
-                {t.thumb
-                  ? <img src={t.thumb} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {t.thumb && !brokenThumbs.has(t.slug)
+                  ? <img src={t.thumb} alt="" loading="lazy"
+                      onError={() => setBrokenThumbs((b) => new Set(b).add(t.slug))}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <span style={{ width: 9, height: 9, borderRadius: '50%', background: t.color }} />}
               </span>
               <span style={{ flex: 1, minWidth: 0 }}>
@@ -116,7 +119,9 @@ export function Detail({ slug, onSeeOnTree }: {
   onSeeOnTree?: (slug: string) => void
 }) {
   const [d, setD] = useState<TaxonDetail | null>(null)
+  const [photoOk, setPhotoOk] = useState(true)
   useEffect(() => {
+    setPhotoOk(true)
     if (!slug) { setD(null); return }
     api.taxon(slug).then(setD).catch(() => setD(null))
   }, [slug])
@@ -131,9 +136,9 @@ export function Detail({ slug, onSeeOnTree }: {
   const c = d.conservation
   return (
     <div style={{ overflowY: 'auto', padding: '26px 32px', maxWidth: 720 }}>
-      {d.photo && (
+      {d.photo && photoOk && (
         <figure style={{ margin: '0 0 20px' }}>
-          <img src={d.photo.url} alt={d.latin} loading="lazy" style={{
+          <img src={d.photo.url} alt={d.latin} loading="lazy" onError={() => setPhotoOk(false)} style={{
             width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 10, display: 'block',
             border: '1px solid var(--hairline)',
           }} />
