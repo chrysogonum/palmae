@@ -3,22 +3,33 @@
 _Last updated: 2026-07-07. Read this first when resuming._
 
 An interactive atlas of the palm family (Arecaceae), sister to Quercus, built on the Quercus code +
-design as scaffold. See `../palms-spec.md` for the full spec, `../RESEARCH.md` for the evidence base, and
-**`../HANDOFF.md`** to bootstrap a fresh session (next up: the money-shot + About/Data/Citations pages).
-The four locked decisions: **the palm-line money-shot**, a **co-equal grower companion**,
-**family-complete from day one**, **conservation led by the Bellot 2022 predicted-risk model**.
-Built first for **Scott Zona** — scientific precision is pass/fail.
+design as scaffold. See `palms-spec.md` for the full spec, `RESEARCH.md` for the evidence base, and
+`HANDOFF.md` for background. The four locked decisions: **the palm-line money-shot**, a **co-equal grower
+companion**, **family-complete from day one**, **conservation led by the Bellot 2022 predicted-risk
+model**. Built first for **Scott Zona** — scientific precision is pass/fail.
 
-## Status: interactive app live (dev) — data spine + API + workbench + the palm-line money-shot
+## Status: DEPLOYED & LIVE — https://palmae.pages.dev
 
-The full data spine is loaded and verified; the FastAPI backend (:8001) serves it; and the React/D3
-frontend has five linked surfaces — the **Palm Line** money-shot (default landing view), a **Workbench**
-(radial 2,539-tip tree + world map, fully bidirectional brushing, search-to-locate, clade drill-in, region
-drill-down), a **World Atlas** richness map, a **Field Guide** catalogue, and species **cards** with honest
-predicted-vs-assessed risk + a derived coldest-month-climate block. Plus **About** and **Sources** pages.
-Static deploy is prepped (export bakes the palm API to JSON; production build is clean); the only remaining
-deploy step is the Cloudflare `wrangler pages deploy` (needs the user's CF login). Not yet built: the other
-lenses (form-function, people-palms) and the dedicated grower companion; the deep-time/future time ribbon.
+Fully static site on Cloudflare Pages (no runtime server/DB). Source is a **private** GitHub repo,
+**github.com/chrysogonum/palmae** (branch `main`; `palms-app/` is the repo root). Deploys are **manual, no
+CI**: bake (`python -m etl.export_static`, in-process) → `npm run build --prefix frontend` → `wrangler
+pages deploy frontend/dist --project-name palmae --branch main`; commit + push after changes. Dev API on
+**:8001** (oak owns :8000), Vite dev on :5173.
+
+The frontend has four linked surfaces plus About/Sources:
+- **Workbench** (default landing / home) — radial tree + world map, fully bidirectional brushing,
+  search-to-locate, clade drill-in, region drill-down. A **tree toggle** switches between the all-species
+  **Faurby 2016** supertree (2,539 tips) and the modern bootstrap-supported **Yao 2023** genus backbone
+  (177 genera). Map hover shows region name; genus hover brushes the map + shows support.
+- **World Atlas** — species-richness choropleth.
+- **Palm Line** — the money-shot (native occurrences coloured by coldest-month mean temp; frost line +
+  renegades). Nav position: between World Atlas and Field Guide.
+- **Field Guide** — 2,591-species catalogue; cards carry honest predicted-vs-assessed risk, a derived
+  coldest-month-climate block, and an "on the phylogeny →" cross-link that traces the species on the tree.
+- Shared **subfamily + risk legend** on the region panel, clade view, and Field Guide.
+
+Not yet built: the other lenses (form-function, people-palms), the dedicated grower companion, the
+deep-time/future time ribbon, low-support flagging on the genus tree.
 
 ### The palm-line money-shot (built + verified this session)
 - **Ingest** (`etl/worldclim.py` + `etl/occurrences.py`, standalone on top of the spine): cleaned wild
@@ -117,15 +128,16 @@ oak `frontend/src/components/*` are dead files (not imported); the live app is a
   (89 spp), Madagascar (220 spp, mostly threatened Chrysalidocarpus). Brushing is now bidirectional.
 
 ## Next steps
-1. **Deploy to Cloudflare Pages** — the prep is done (static bake + clean prod build). Remaining:
-   run `PYTHONPATH=api .venv/bin/python -m etl.export_static` (API up on :8001) → `npm run build
-   --prefix frontend` → `wrangler pages deploy frontend/dist` (**needs the user's Cloudflare login**).
-   Point the deployed frontend at the baked `/api/*.json` (already the prod default in `client.ts`).
-2. **The palm-line time ribbon** (deferred, harder) — Eocene high-latitude fossils (Paleobiology DB) for
+*(Deploy is DONE — live at palmae.pages.dev, source on GitHub. Deploys stay manual by user's choice; a
+GitHub Action could auto-deploy on push to main but needs a Cloudflare API token in repo secrets.)*
+1. **The dedicated grower companion** — "will it grow where I live?" (co-equal locked decision, not yet
+   built). The `climate_profile` (CMMT edge per species) + USDA-zone geography is the spine for it.
+2. **The other lenses** (form-function, people-palms / ethnobotany — `use` and `photo` tables still empty).
+3. **The palm-line time ribbon** (deferred, harder) — Eocene high-latitude fossils (Paleobiology DB) for
    the deep-time axis + WorldClim CMIP6 future for the warming axis. Currently a static present-day reveal.
-3. **The other lenses** (form-function, people-palms) and the dedicated **grower companion** surface
-   ("will it grow where I live?" — the climate_profile + USDA-zone data is the spine for it).
-4. **Occurrence coverage** — the bulk fetch covers 1,192 of 2,591 species (rare/newly-described palms have
+4. **Genus-tree polish** — flag low-support clades (e.g. dim/mark nodes under ~70% bootstrap) so
+   uncertainty is visible at a glance, not just on hover.
+5. **Occurrence coverage** — the bulk fetch covers 1,192 of 2,591 species (rare/newly-described palms have
    few/no GBIF records). A GBIF Download DOI snapshot would raise coverage + give a citable dataset.
 
 ### Known rough edges (polish)

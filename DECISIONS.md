@@ -1,5 +1,19 @@
 # Decisions — Palmae
 
+## 2026-07-07 (deploy + version control)
+
+**Decision:** Ship to **Cloudflare Pages** (live at palmae.pages.dev) and put the source in a **private**
+GitHub repo (`github.com/chrysogonum/palmae`), with **manual deploys and no CI**.
+**Reason:** The app is a "surprise for Scott" and the data carries non-commercial licences, so private for
+now. No version control existed at all before this — the private repo gives history + off-machine backup
+without exposing the project. Manual deploy keeps the loop simple; the user declined auto-deploy CI.
+**Impact:** Repo root = `palms-app/` (context docs `RESEARCH.md`/`palms-spec.md`/`HANDOFF.md` copied in so
+it's self-contained). Gitignored: `api/.env`, `node_modules`/`.venv`, the baked `frontend/public/api/` and
+WorldClim rasters (both ETL-regenerated), `.deadcode-frontend/`. Deploys go local `dist` → Cloudflare via
+`wrangler`, independent of GitHub; commit + push after changes. A GitHub Action could auto-deploy later
+(needs a CF API token in repo secrets).
+**Supersedes:** refines the static-deploy decision below (which is now executed).
+
 ## 2026-07-07 (genus-tree session)
 
 **Decision:** Add a **modern genus-level tree** (Yao et al. 2023 plastid phylogenomics) as a toggle
