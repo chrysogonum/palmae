@@ -669,6 +669,11 @@ body {
   font: inherit; font-style: italic; border-bottom: 1px solid rgba(217,178,90,.4);
 }
 .inline-link:hover { border-bottom-color: var(--gold); }
+.mono { font-family: var(--font-mono); }
+code.mono {
+  font-size: .9em; color: var(--ink); white-space: nowrap;
+  background: color-mix(in srgb, var(--gold) 9%, transparent); padding: 1px 5px; border-radius: 4px;
+}
 
 /* pipeline strip */
 .pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 4px; margin: 18px 0 6px; }

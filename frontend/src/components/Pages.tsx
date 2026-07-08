@@ -154,6 +154,33 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
           <em>PALMS</em> — so we fly it as a deliberate nod to that tradition, not a lapse of it.
         </p>
 
+        <h2 className="page-h2">Under the hood</h2>
+        <p className="page-p">
+          What you are using is a fully static site — there is no application server in the request path.
+          The interface is React&nbsp;19 and TypeScript, bundled by Vite&nbsp;6 and served from Cloudflare&nbsp;Pages.
+          The linked tree-and-map workbench is D3: the phylogenies are radial cluster layouts
+          (<code className="mono">d3-hierarchy</code>) drawn straight from the Faurby and Yao topologies, and every
+          map is a Natural&nbsp;Earth projection (<code className="mono">d3-geo</code>) over the TDWG WGSRPD level-3
+          polygons, so a species range, a region click and a clade's footprint are all the same geometry.
+        </p>
+        <p className="page-p">
+          The data spine is built ahead of time, not live. A Python pipeline loads the six datasets into
+          PostgreSQL&nbsp;17 with the PostGIS extension (SQLAlchemy&nbsp;2 and GeoAlchemy2 over psycopg&nbsp;3,
+          hosted on Supabase for the build), and a FastAPI layer defines the typed endpoints. At deploy time a
+          bake step calls those route handlers <em>in-process</em> — no HTTP, no running server — and writes the
+          entire API to static JSON under the site. The database therefore exists only while the site is being
+          built; production is just files on a CDN. Photographs are hot-linked from iNaturalist under their
+          Creative&nbsp;Commons licences rather than re-hosted, which keeps attribution intact and the payload small.
+        </p>
+        <div className="mono" style={{
+          fontSize: 12.5, lineHeight: 1.9, color: 'var(--ink-muted)', margin: '2px 0 4px',
+          padding: '12px 15px', border: '1px solid var(--hairline)', borderRadius: 9, overflowX: 'auto',
+        }}>
+          <div><span style={{ color: 'var(--gold)' }}>client&nbsp;&nbsp;</span> React 19 · TypeScript · D3 7 (d3-hierarchy, d3-geo) · Vite 6</div>
+          <div><span style={{ color: 'var(--gold)' }}>build&nbsp;&nbsp;&nbsp;</span> Python ETL · FastAPI · SQLAlchemy 2 + GeoAlchemy2 · PostgreSQL 17 / PostGIS</div>
+          <div><span style={{ color: 'var(--gold)' }}>serve&nbsp;&nbsp;&nbsp;</span> route handlers baked in-process → static JSON → Cloudflare Pages</div>
+        </div>
+
         <h2 className="page-h2">Built for the palm community</h2>
         <p className="page-p">
           Attribution is a first-class surface here, not a footnote. The underlying datasets carry their own
