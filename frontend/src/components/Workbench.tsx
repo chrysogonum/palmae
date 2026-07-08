@@ -26,9 +26,10 @@ function Head({ title, meta, children }: { title: string; meta?: string; childre
 /** The workbench: the palm tree of life and the world map, brushed against each
  *  other. Hover a clade → its range lights up. Click a clade → drill into a labeled
  *  subtree. Search → locate a species on the tree. Click a tip → its card. */
-export function Workbench({ locateReq, onSeeOnTree }: {
+export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   locateReq?: { slug: string; n: number } | null
   onSeeOnTree?: (slug: string) => void
+  onGenusClick?: (genus: string) => void
 } = {}) {
   const regions = useRef<Record<string, string[]>>({})
   const [highlight, setHighlight] = useState<Set<string> | null>(null)
@@ -115,7 +116,8 @@ export function Workbench({ locateReq, onSeeOnTree }: {
               </div>
             </Head>
             <RadialTree source={treeSource} onBrush={onBrush} onBrushRegions={onBrushRegions}
-              onSelect={onSelect} onFocus={onFocus} locate={locate} highlightSlugs={treeHighlight} />
+              onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
+              locate={locate} highlightSlugs={treeHighlight} />
           </>
         )}
       </section>

@@ -19,12 +19,13 @@ type TipSel = d3.Selection<SVGCircleElement, HNode, SVGGElement, unknown>
  *    branch→focus, click a tip→select, locate/highlight a species).
  *  - source='genera'  → the Yao 2023 plastid genus backbone (modern, bootstrap-
  *    supported): brush→regions, tips are genera, hover shows support. */
-export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, locate, highlightSlugs }: {
+export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, highlightSlugs }: {
   source?: 'species' | 'genera'
   onBrush: (slugs: string[] | null) => void
   onBrushRegions?: (codes: string[] | null) => void
   onSelect: (slug: string) => void
   onFocus: (clade: TreeNode, slugs: string[]) => void
+  onGenusClick?: (genus: string) => void
   locate: string | null
   highlightSlugs: Set<string> | null
 }) {
@@ -115,15 +116,20 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
       tips.on('mouseover', function (e, d) {
         d3.select(this).attr('r', isGenus ? 5 : 4).attr('fill', '#E7C766')
         const [x, y] = d3.pointer(e, wrap.current)
-        const label = isGenus ? `${d.data.genus} · ${d.data.nSpecies} species` : (d.data.latin ?? d.data.sp ?? '')
+        const label = isGenus
+          ? `${d.data.genus} · ${d.data.nSpecies} species — click to open`
+          : (d.data.latin ?? d.data.sp ?? '')
         setTip({ label, x, y })
       }).on('mouseout', function (_e, d) {
         d3.select(this).attr('r', tipR).attr('fill', subColor(d.data.subfamily))
         setTip(null)
-      }).on('click', (_e, d) => { if (!isGenus && d.data.sp) onSelect(d.data.sp) })
+      }).on('click', (_e, d) => {
+        if (isGenus) { if (d.data.genus) onGenusClick?.(d.data.genus) }
+        else if (d.data.sp) onSelect(d.data.sp)
+      })
     })
     return () => { cancelled = true }
-  }, [source, onBrush, onBrushRegions, onSelect, onFocus])
+  }, [source, onBrush, onBrushRegions, onSelect, onFocus, onGenusClick])
 
   // search-to-locate (single species) and region → tree (many species): trace the
   // path(s) to the root and mark the tips. locate wins if both are set.

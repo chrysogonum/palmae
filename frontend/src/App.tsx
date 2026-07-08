@@ -13,12 +13,18 @@ export default function App() {
   const [surface, setSurface] = useState<Surface>('workbench')
   const [cov, setCov] = useState<Coverage | null>(null)
   const [treeLocate, setTreeLocate] = useState<{ slug: string; n: number } | null>(null)
+  const [guideFilter, setGuideFilter] = useState<{ q: string; n: number } | null>(null)
   useEffect(() => { api.coverage().then(setCov).catch(() => {}) }, [])
 
   // cross-link: "see on the tree" from any species card → Workbench, traced on the tree
   const seeOnTree = useCallback((slug: string) => {
     setTreeLocate((t) => ({ slug, n: (t?.n ?? 0) + 1 }))
     setSurface('workbench')
+  }, [])
+  // cross-link: click a genus on the genus tree → Field Guide filtered to that genus
+  const seeGenus = useCallback((genus: string) => {
+    setGuideFilter((g) => ({ q: genus, n: (g?.n ?? 0) + 1 }))
+    setSurface('guide')
   }, [])
 
   return (
@@ -60,9 +66,9 @@ export default function App() {
       </header>
       <main style={{ flex: '1 1 auto', minHeight: 0, position: 'relative', display: 'flex' }}>
         {surface === 'palmline' ? <PalmLine onSeeOnTree={seeOnTree} />
-          : surface === 'workbench' ? <Workbench locateReq={treeLocate} onSeeOnTree={seeOnTree} />
+          : surface === 'workbench' ? <Workbench locateReq={treeLocate} onSeeOnTree={seeOnTree} onGenusClick={seeGenus} />
           : surface === 'atlas' ? <AtlasMap onSeeOnTree={seeOnTree} />
-          : surface === 'guide' ? <Catalogue onSeeOnTree={seeOnTree} />
+          : surface === 'guide' ? <Catalogue onSeeOnTree={seeOnTree} filter={guideFilter} />
           : surface === 'about' ? <About go={setSurface} />
           : <Sources go={setSurface} />}
       </main>

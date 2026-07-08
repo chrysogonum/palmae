@@ -5,13 +5,21 @@ import { SubfamilyRiskLegend } from './Legend'
 
 const SUBFAMILIES = ['Arecoideae', 'Coryphoideae', 'Calamoideae', 'Ceroxyloideae', 'Nypoideae']
 
-export function Catalogue({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void }) {
+export function Catalogue({ onSeeOnTree, filter }: {
+  onSeeOnTree?: (slug: string) => void
+  filter?: { q: string; n: number } | null
+}) {
   const [taxa, setTaxa] = useState<TaxonListItem[]>([])
   const [q, setQ] = useState('')
   const [sub, setSub] = useState<string | null>(null)
   const [slug, setSlug] = useState<string | null>(null)
 
   useEffect(() => { api.taxa().then(setTaxa).catch(() => {}) }, [])
+  // an external filter request (e.g. clicking a genus on the tree) → search that genus
+  useEffect(() => {
+    if (filter) { setQ(filter.q); setSub(null); setSlug(null) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter?.n])
 
   const filtered = useMemo(() => {
     const like = q.toLowerCase()
