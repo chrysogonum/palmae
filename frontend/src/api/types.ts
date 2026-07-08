@@ -24,7 +24,9 @@ export interface TaxonListItem {
   genus: string | null; tribe: string | null; subfamily: string | null
   color: string; risk: string; riskBasis: string | null; riskColor: string
   nRegions: number; endemic: boolean; hasTraits: boolean; onTree: boolean
+  thumb: string | null
 }
+export interface Photo { url: string; attribution: string | null; license: string | null }
 
 export interface Coverage {
   total_species: number; traits_pct: number; ranges_pct: number
@@ -44,7 +46,7 @@ export interface TaxonDetail {
   slug: Slug; latin: string; authority: string | null; common: string | null
   genus: string | null; tribe: string | null; subfamily: string | null; isHybrid: boolean
   color: string; glance: GlanceRow[]; conservation: Conservation
-  climate: ClimateProfile | null
+  climate: ClimateProfile | null; photo: Photo | null
   nativeRegions: string[]; introducedRegions: string[]; onTree: boolean
   traits: Record<string, string | number>
 }

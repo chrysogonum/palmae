@@ -19,7 +19,7 @@ type TipSel = d3.Selection<SVGCircleElement, HNode, SVGGElement, unknown>
  *    branch→focus, click a tip→select, locate/highlight a species).
  *  - source='genera'  → the Yao 2023 plastid genus backbone (modern, bootstrap-
  *    supported): brush→regions, tips are genera, hover shows support. */
-export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, highlightSlugs }: {
+export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, locateGenus, highlightSlugs }: {
   source?: 'species' | 'genera'
   onBrush: (slugs: string[] | null) => void
   onBrushRegions?: (codes: string[] | null) => void
@@ -27,6 +27,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
   onFocus: (clade: TreeNode, slugs: string[]) => void
   onGenusClick?: (genus: string) => void
   locate: string | null
+  locateGenus?: { genus: string; n: number } | null
   highlightSlugs: Set<string> | null
 }) {
   const wrap = useRef<HTMLDivElement>(null)
@@ -169,6 +170,25 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         .attr('fill', (t) => (marked.has(t) ? '#E7C766' : subColor(t.data.subfamily)))
     }
   }, [locate, highlightSlugs, ready, source])
+
+  // genus tree: search-to-locate a genus — trace its path, pulse its tip, light its range
+  useEffect(() => {
+    const s = store.current
+    if (source !== 'genera' || !s || !locateGenus) return
+    s.reset()
+    const node = (s.root.leaves() as HNode[]).find((l) => l.data.genus === locateGenus.genus)
+    if (!node) return
+    const path = new Set(node.ancestors())
+    s.links.attr('stroke-opacity', (l) => (path.has(l.target as HNode) ? 1 : 0.08))
+      .attr('stroke-width', (l) => (path.has(l.target as HNode) ? 1.5 : 0.5))
+      .attr('stroke', (l) => (path.has(l.target as HNode) ? '#E7C766' : subColor((l.target as HNode)._sub)))
+    const pulse = () => s.tips.filter((t) => t === node).interrupt()
+      .attr('fill', '#E7C766').attr('r', 8).transition().duration(850).attr('r', 3.5)
+      .transition().duration(850).attr('r', 8).on('end', pulse)
+    pulse()
+    onBrushRegions?.(node.data.regions ?? [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locateGenus?.n, ready, source])
 
   return (
     <div ref={wrap} style={{ position: 'relative', width: '100%', height: '100%' }}>

@@ -19,6 +19,11 @@ router = APIRouter()
 FAURBY = "faurby-supertree"
 
 
+def _square(url: str | None) -> str | None:
+    """iNaturalist photo URL → its 75px square variant (for list thumbnails)."""
+    return url.replace("/medium.", "/square.") if url else None
+
+
 # --------------------------------------------------------------------------- #
 # meta: sources, search
 # --------------------------------------------------------------------------- #
@@ -308,6 +313,8 @@ def taxa(db: Session = Depends(get_session)):
         text("select distinct species_id from trait"))}
     on_tree = {sid for (sid,) in db.execute(
         text("select distinct species_id from phylogeny_node where species_id is not null"))}
+    thumbs = dict(db.execute(text(
+        "select species_id, url from photo where source='iNaturalist'")).all())
     out = []
     for sid, slug, sci, common, genus, tribe, subfamily, risk, basis in rows:
         out.append({
@@ -319,6 +326,7 @@ def taxa(db: Session = Depends(get_session)):
             "nRegions": region_n.get(sid, 0),
             "endemic": region_n.get(sid, 0) == 1,
             "hasTraits": sid in with_traits, "onTree": sid in on_tree,
+            "thumb": _square(thumbs.get(sid)),
         })
     return out
 
@@ -435,11 +443,16 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
                     "tolerance.",
         }
 
+    ph = db.execute(text(
+        "select url, attribution, license from photo where species_id=:sid "
+        "and source='iNaturalist' order by is_default desc limit 1"), {"sid": sid}).first()
+    photo = {"url": ph[0], "attribution": ph[1], "license": ph[2]} if ph else None
+
     return {
         "slug": slug, "latin": sci, "authority": auth, "common": common,
         "genus": genus, "tribe": tribe, "subfamily": subfamily, "isHybrid": is_hybrid,
         "color": palette.subfamily_color(subfamily),
-        "glance": glance, "conservation": conservation, "climate": climate,
+        "glance": glance, "conservation": conservation, "climate": climate, "photo": photo,
         "nativeRegions": native, "introducedRegions": introduced,
         "onTree": bool(on_tree),
         "traits": {k: (v["num"] if v["num"] is not None else v["cat"]) for k, v in tr.items()},

@@ -224,16 +224,16 @@ DATA_SOURCES = [
 
     # --- Media & descriptions -------------------------------------------------
     {"id": "inaturalist", "name": "iNaturalist",
-     "role": "photos · common names · observations", "license": "CC0 / CC-BY / CC-BY-NC (per image)",
-     "note": "CC-licensed species photos, common names, and observation counts via the "
-             "iNaturalist Open Data mirror (AWS); each photo credited to its observer. "
-             "Also the source for feral/spontaneous-palm occurrences in the grower surface.",
+     "role": "CC-licensed species photos (not yet displayed)", "license": "CC0 / CC-BY / CC-BY-NC (per image)",
+     "note": "The intended source for a representative Creative-Commons-licensed photograph per species — "
+             "credited to its observer, via the public iNaturalist taxa API, with all-rights-reserved "
+             "images skipped. Not yet integrated: the app currently shows no photographs.",
      "authors": "iNaturalist community",
      "year": 2024,
-     "title": "iNaturalist Research-grade Observations (Arecaceae)",
-     "venue": "iNaturalist.org · Open Data on AWS",
+     "title": "iNaturalist (Arecaceae, taxon 48867)",
+     "venue": "iNaturalist.org",
      "doi": None,
-     "url": "https://www.inaturalist.org/taxa/2786-Arecaceae"},
+     "url": "https://www.inaturalist.org/taxa/48867-Arecaceae"},
     {"id": "wikipedia", "name": "Wikipedia",
      "role": "species descriptions (fallback)", "license": "CC-BY-SA 4.0",
      "note": "Short descriptive lead extract per species where no primary description is "

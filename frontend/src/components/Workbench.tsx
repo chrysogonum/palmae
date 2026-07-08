@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RadialTree } from './RadialTree'
 import { CladeFocus } from './CladeFocus'
 import { LinkedMap } from './LinkedMap'
@@ -39,6 +39,22 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   const [region, setRegion] = useState<{ code: string; name: string } | null>(null)
   const [treeHighlight, setTreeHighlight] = useState<Set<string> | null>(null)
   const [treeSource, setTreeSource] = useState<'species' | 'genera'>('species')
+  const [genera, setGenera] = useState<{ genus: string; nSpecies: number }[]>([])
+  const [locateGenus, setLocateGenus] = useState<{ genus: string; n: number } | null>(null)
+
+  // load the genus list (for the genus-tree search) the first time genus mode opens
+  useEffect(() => {
+    if (treeSource !== 'genera' || genera.length) return
+    api.treeGenera().then((tree) => {
+      const out: { genus: string; nSpecies: number }[] = []
+      const walk = (n: TreeNode) => {
+        if (n.genus) out.push({ genus: n.genus, nSpecies: n.nSpecies ?? 0 })
+        n.children?.forEach(walk)
+      }
+      walk(tree)
+      setGenera(out.sort((a, b) => a.genus.localeCompare(b.genus)))
+    }).catch(() => {})
+  }, [treeSource, genera.length])
 
   useEffect(() => { api.speciesRegions().then((m) => { regions.current = m }).catch(() => {}) }, [])
 
@@ -57,8 +73,11 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   }, [])
   const switchTree = useCallback((src: 'species' | 'genera') => {
     setTreeSource(src)
-    setFocus(null); setLocate(null); setRegion(null)
+    setFocus(null); setLocate(null); setLocateGenus(null); setRegion(null)
     setTreeHighlight(null); setHighlight(null); setSelected(null)
+  }, [])
+  const locateGenusByName = useCallback((genus: string) => {
+    setLocateGenus((g) => ({ genus, n: (g?.n ?? 0) + 1 }))
   }, [])
   const onSelect = useCallback((slug: string) => setSelected(slug), [])
   const onFocus = useCallback((data: TreeNode, slugs: string[]) => {
@@ -112,12 +131,14 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
                   <button className={treeSource === 'species' ? 'active' : ''} onClick={() => switchTree('species')}>All species</button>
                   <button className={treeSource === 'genera' ? 'active' : ''} onClick={() => switchTree('genera')}>Genera</button>
                 </div>
-                {treeSource === 'species' && <SearchBox onPick={locateSpecies} />}
+                {treeSource === 'species'
+                  ? <SearchBox onPick={locateSpecies} />
+                  : <GenusSearchBox genera={genera} onPick={locateGenusByName} />}
               </div>
             </Head>
             <RadialTree source={treeSource} onBrush={onBrush} onBrushRegions={onBrushRegions}
               onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
-              locate={locate} highlightSlugs={treeHighlight} />
+              locate={locate} locateGenus={locateGenus} highlightSlugs={treeHighlight} />
           </>
         )}
       </section>
@@ -183,6 +204,48 @@ function SearchBox({ onPick }: { onPick: (r: SearchResult) => void }) {
                 <span style={{ fontStyle: 'italic', fontSize: 13.5 }}>{r.latin}</span>
                 {r.sub && <span style={{ display: 'block', fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{r.sub}</span>}
               </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Genus-tree search: filters the ~177 genera client-side; picking one locates it on
+// the genus tree (traces its path, pulses the tip, lights its range).
+function GenusSearchBox({ genera, onPick }: {
+  genera: { genus: string; nSpecies: number }[]
+  onPick: (genus: string) => void
+}) {
+  const [q, setQ] = useState('')
+  const results = useMemo(() => {
+    const like = q.trim().toLowerCase()
+    if (!like) return []
+    return genera.filter((g) => g.genus.toLowerCase().includes(like)).slice(0, 14)
+  }, [q, genera])
+  return (
+    <div style={{ position: 'relative', pointerEvents: 'auto' }}>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a genus…"
+        style={{
+          width: 210, background: 'var(--panel)', border: '1px solid var(--hairline)', borderRadius: 8,
+          color: 'var(--ink)', padding: '7px 11px', fontSize: 13, fontFamily: 'var(--font-body)',
+        }} />
+      {results.length > 0 && (
+        <div style={{
+          position: 'absolute', top: 38, right: 0, width: 260, maxHeight: 320, overflowY: 'auto',
+          background: 'var(--ground-raised)', border: '1px solid var(--hairline)', borderRadius: 8, zIndex: 10,
+          boxShadow: '0 12px 30px rgba(0,0,0,.5)',
+        }}>
+          {results.map((g) => (
+            <button key={g.genus} onClick={() => { onPick(g.genus); setQ('') }}
+              style={{
+                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 9, width: '100%',
+                textAlign: 'left', background: 'transparent', border: 0, borderBottom: '1px solid var(--hairline)',
+                padding: '8px 11px', cursor: 'pointer', color: 'var(--ink)',
+              }}>
+              <span style={{ fontStyle: 'italic', fontSize: 13.5 }}>{g.genus}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{g.nSpecies} spp</span>
             </button>
           ))}
         </div>

@@ -69,11 +69,19 @@ export function Catalogue({ onSeeOnTree, filter }: {
           {filtered.slice(0, 600).map((t) => (
             <button key={t.slug} onClick={() => setSlug(t.slug)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
+                display: 'flex', alignItems: 'center', gap: 11, width: '100%', textAlign: 'left',
                 background: slug === t.slug ? 'var(--ground-raised)' : 'transparent', border: 0,
-                borderBottom: '1px solid var(--hairline)', padding: '9px 14px', cursor: 'pointer', color: 'var(--ink)',
+                borderBottom: '1px solid var(--hairline)', padding: '8px 14px', cursor: 'pointer', color: 'var(--ink)',
               }}>
-              <span style={{ width: 9, height: 9, borderRadius: '50%', background: t.color, flex: '0 0 auto' }} />
+              <span style={{
+                width: 30, height: 30, flex: '0 0 auto', borderRadius: 6, overflow: 'hidden',
+                display: 'grid', placeItems: 'center',
+                boxShadow: t.thumb ? `0 0 0 1.5px ${t.color}` : 'none',
+              }}>
+                {t.thumb
+                  ? <img src={t.thumb} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ width: 9, height: 9, borderRadius: '50%', background: t.color }} />}
+              </span>
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontStyle: 'italic', fontSize: 14 }}>{t.latin}</span>
                 <span style={{ display: 'block', fontSize: 11, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>
@@ -123,6 +131,17 @@ export function Detail({ slug, onSeeOnTree }: {
   const c = d.conservation
   return (
     <div style={{ overflowY: 'auto', padding: '26px 32px', maxWidth: 720 }}>
+      {d.photo && (
+        <figure style={{ margin: '0 0 20px' }}>
+          <img src={d.photo.url} alt={d.latin} loading="lazy" style={{
+            width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 10, display: 'block',
+            border: '1px solid var(--hairline)',
+          }} />
+          <figcaption style={{ fontSize: 10.5, color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)', marginTop: 6, lineHeight: 1.4 }}>
+            {d.photo.attribution || `${d.photo.license ?? 'CC'} licensed`} · iNaturalist
+          </figcaption>
+        </figure>
+      )}
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--ink-faint)' }}>
         {d.subfamily} · {d.tribe ?? '—'}
       </div>
