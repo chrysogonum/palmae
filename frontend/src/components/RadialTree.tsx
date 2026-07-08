@@ -24,7 +24,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
   onBrush: (slugs: string[] | null) => void
   onBrushRegions?: (codes: string[] | null) => void
   onSelect: (slug: string) => void
-  onFocus: (clade: TreeNode, slugs: string[]) => void
+  onFocus: (clade: TreeNode, meta: { count: number; kind: 'species' | 'genera'; slugs?: string[]; codes?: string[] }) => void
   onGenusClick?: (genus: string) => void
   locate: string | null
   locateGenus?: { genus: string; n: number } | null
@@ -133,7 +133,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
           const sup = clade.data.support
           const nG = leaves.length === 1 ? '1 genus' : `${leaves.length} genera`
           setTip({ label: `${nG}${clade._sub ? ' · ' + clade._sub : ''}`
-            + (sup != null ? ` · ${sup}% bootstrap` : '') + ' — click a genus to open', x, y })
+            + (sup != null ? ` · ${sup}% bootstrap` : '') + ' — click to zoom in', x, y })
         } else {
           onBrush(leaves.map((l) => l.data.sp).filter(Boolean) as string[])
           setTip({ label: `${leaves.length} species${clade._sub ? ' · ' + clade._sub : ''} — click to open`, x, y })
@@ -142,9 +142,16 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
       hit.on('mouseover', onBranch).on('mousemove', onBranch)
         .on('mouseout', () => { reset(); onBrush(null); onBrushRegions?.(null); setTip(null) })
         .on('click', (_e, d) => {
-          if (isGenus) return
           const clade = d.target as HNode
-          onFocus(clade.data, (clade.leaves() as HNode[]).map((l) => l.data.sp).filter(Boolean) as string[])
+          const cladeLeaves = clade.leaves() as HNode[]
+          if (isGenus) {
+            const codes = new Set<string>()
+            cladeLeaves.forEach((l) => (l.data.regions ?? []).forEach((c) => codes.add(c)))
+            onFocus(clade.data, { count: cladeLeaves.length, kind: 'genera', codes: [...codes] })
+          } else {
+            onFocus(clade.data, { count: cladeLeaves.length, kind: 'species',
+              slugs: cladeLeaves.map((l) => l.data.sp).filter(Boolean) as string[] })
+          }
         })
 
       tips.on('mouseover', function (e, d) {

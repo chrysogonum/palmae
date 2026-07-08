@@ -14,9 +14,13 @@ const subColor = (s: string | null | undefined) => (s && SUB_COLOR[s]) || '#4A53
 
 type HN = d3.HierarchyPointNode<TreeNode>
 
-/** A focused clade rendered as a legible, scrollable rectangular cladogram with
- *  species labels, subfamily dots, and risk chips. Click a tip → its species card. */
-export function CladeFocus({ data, onSelect }: { data: TreeNode; onSelect: (slug: string) => void }) {
+/** A focused clade rendered as a legible, scrollable rectangular cladogram.
+ *  Species mode: latin labels, subfamily dots, risk chips → click opens the card.
+ *  Genera mode: genus labels with species counts → click opens the genus. */
+export function CladeFocus({ data, kind = 'species', onSelect, onGenusClick }: {
+  data: TreeNode; kind?: 'species' | 'genera'
+  onSelect: (slug: string) => void; onGenusClick?: (genus: string) => void
+}) {
   const wrap = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -52,22 +56,33 @@ export function CladeFocus({ data, onSelect }: { data: TreeNode; onSelect: (slug
 
     const tip = g.selectAll('g.t').data(leaves).join('g').attr('class', 't')
       .attr('transform', (d) => `translate(${d.y},${d.x})`).style('cursor', 'pointer')
+    const isGen = kind === 'genera'
     tip.append('circle').attr('r', 3).attr('fill', (d) => subColor(d.data.subfamily))
     tip.append('text').attr('x', 9).attr('dy', '0.32em').attr('font-size', 12.5)
-      .attr('font-style', 'italic').attr('fill', '#EDF0E2')
-      .text((d) => d.data.latin ?? d.data.sp ?? '')
-    tip.append('rect').attr('x', labelW - 22).attr('y', -4).attr('width', 8).attr('height', 8).attr('rx', 2)
-      .attr('fill', (d) => RISK_COLOR[d.data.risk ?? 'not-evaluated'])
+      .attr('font-style', 'italic').attr('fill', '#EDF0E2').attr('class', 'lbl')
+      .text((d) => (isGen ? d.data.genus : d.data.latin ?? d.data.sp) ?? '')
+    if (isGen) {
+      // right-aligned species count instead of a risk chip
+      tip.append('text').attr('x', labelW - 14).attr('dy', '0.32em').attr('font-size', 11)
+        .attr('text-anchor', 'end').attr('fill', '#8A9279')
+        .text((d) => (d.data.nSpecies != null ? `${d.data.nSpecies} spp` : ''))
+    } else {
+      tip.append('rect').attr('x', labelW - 22).attr('y', -4).attr('width', 8).attr('height', 8).attr('rx', 2)
+        .attr('fill', (d) => RISK_COLOR[d.data.risk ?? 'not-evaluated'])
+    }
     tip.append('rect').attr('x', -6).attr('y', -row / 2).attr('width', labelW + treeW).attr('height', row)
       .attr('fill', 'transparent')
-      .on('mouseover', function () { d3.select((this as SVGElement).parentNode as Element).select('text').attr('fill', '#E7C766') })
-      .on('mouseout', function () { d3.select((this as SVGElement).parentNode as Element).select('text').attr('fill', '#EDF0E2') })
-      .on('click', (_e, d) => { if (d.data.sp) onSelect(d.data.sp) })
-  }, [data, onSelect])
+      .on('mouseover', function () { d3.select((this as SVGElement).parentNode as Element).select('text.lbl').attr('fill', '#E7C766') })
+      .on('mouseout', function () { d3.select((this as SVGElement).parentNode as Element).select('text.lbl').attr('fill', '#EDF0E2') })
+      .on('click', (_e, d) => {
+        if (isGen) { if (d.data.genus) onGenusClick?.(d.data.genus) }
+        else if (d.data.sp) onSelect(d.data.sp)
+      })
+  }, [data, kind, onSelect, onGenusClick])
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <SubfamilyRiskLegend subs={subs} style={{ padding: '7px 12px 9px', borderBottom: '1px solid var(--hairline)' }} />
+      <SubfamilyRiskLegend subs={subs} showRisk={kind !== 'genera'} style={{ padding: '7px 12px 9px', borderBottom: '1px solid var(--hairline)' }} />
       <div ref={wrap} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '4px 8px' }}>
         <svg ref={svgRef} style={{ display: 'block' }} />
       </div>

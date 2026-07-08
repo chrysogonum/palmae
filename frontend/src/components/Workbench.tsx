@@ -35,7 +35,7 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   const regions = useRef<Record<string, string[]>>({})
   const [highlight, setHighlight] = useState<Set<string> | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
-  const [focus, setFocus] = useState<{ data: TreeNode; label: string } | null>(null)
+  const [focus, setFocus] = useState<{ data: TreeNode; label: string; kind: 'species' | 'genera' } | null>(null)
   const [locate, setLocate] = useState<string | null>(null)
   const [region, setRegion] = useState<{ code: string; name: string } | null>(null)
   // mirror of `region` in a ref so the stable brush callbacks can restore the
@@ -104,9 +104,14 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
     setLocateGenus((g) => ({ genus, n: (g?.n ?? 0) + 1 }))
   }, [])
   const onSelect = useCallback((slug: string) => setSelected(slug), [])
-  const onFocus = useCallback((data: TreeNode, slugs: string[]) => {
-    setFocus({ data, label: `${slugs.length} species${data.subfamily ? ' · ' + data.subfamily : ''}` })
-    setHighlight(regionsFor(slugs)); setLocate(null)
+  // Focus a clade into a legible sub-tree with the map showing its combined range.
+  // Species clades resolve regions per-species; genus clades carry region codes directly.
+  const onFocus = useCallback((data: TreeNode, meta:
+    { count: number; kind: 'species' | 'genera'; slugs?: string[]; codes?: string[] }) => {
+    const codes = meta.codes ? new Set(meta.codes) : regionsFor(meta.slugs ?? [])
+    const noun = meta.kind === 'genera' ? (meta.count === 1 ? 'genus' : 'genera') : 'species'
+    setFocus({ data, kind: meta.kind, label: `${meta.count} ${noun}${data.subfamily ? ' · ' + data.subfamily : ''}` })
+    setHighlight(codes); setLocate(null); setSelected(null); setRegion(null)
   }, [regionsFor])
 
   const locateBySlug = useCallback((slug: string) => {
@@ -141,7 +146,7 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
               <button onClick={() => { setFocus(null); setHighlight(null) }} style={btn}>← full tree</button>
             </Head>
             <div style={{ position: 'absolute', inset: 0, paddingTop: 42 }}>
-              <CladeFocus data={focus.data} onSelect={onSelect} />
+              <CladeFocus data={focus.data} kind={focus.kind} onSelect={onSelect} onGenusClick={onGenusClick} />
             </div>
           </>
         ) : (
