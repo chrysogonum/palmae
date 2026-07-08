@@ -1,0 +1,76 @@
+import { useEffect, useMemo, useRef } from 'react'
+import * as d3 from 'd3'
+import type { TreeNode } from '../api/types'
+import { SubfamilyRiskLegend } from './Legend'
+
+const SUB_COLOR: Record<string, string> = {
+  Arecoideae: '#4FB89A', Coryphoideae: '#E0A63C', Calamoideae: '#7F9CD6',
+  Ceroxyloideae: '#A98BC0', Nypoideae: '#C15A4B',
+}
+const RISK_COLOR: Record<string, string> = {
+  threatened: '#C1403C', 'not-threatened': '#6FBF73', 'not-evaluated': '#9AA0A6',
+}
+const subColor = (s: string | null | undefined) => (s && SUB_COLOR[s]) || '#4A5340'
+
+type HN = d3.HierarchyPointNode<TreeNode>
+
+/** A focused clade rendered as a legible, scrollable rectangular cladogram with
+ *  species labels, subfamily dots, and risk chips. Click a tip → its species card. */
+export function CladeFocus({ data, onSelect }: { data: TreeNode; onSelect: (slug: string) => void }) {
+  const wrap = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  // which subfamilies appear in this clade — so the legend shows only what's relevant
+  const subs = useMemo(() => {
+    const seen = new Set<string>()
+    d3.hierarchy<TreeNode>(data).leaves().forEach((l) => {
+      if (l.data.subfamily) seen.add(l.data.subfamily)
+    })
+    return [...seen].sort()
+  }, [data])
+
+  useEffect(() => {
+    if (!wrap.current || !svgRef.current) return
+    const root = d3.hierarchy<TreeNode>(data) as HN
+    const leaves = root.leaves() as HN[]
+    const row = 17
+    const treeW = Math.min(260, 40 + root.height * 26)
+    const labelW = 340
+    const W = treeW + labelW
+    const H = Math.max(leaves.length * row, 30) + 24
+    d3.cluster<TreeNode>().size([H - 24, treeW])(root)
+
+    const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('width', W).attr('height', H)
+    svg.selectAll('*').remove()
+    const g = svg.append('g').attr('transform', 'translate(8,12)')
+
+    const linkGen = d3.linkHorizontal<d3.HierarchyPointLink<TreeNode>, HN>().x((d) => d.y).y((d) => d.x)
+    g.selectAll('path').data(root.links()).join('path')
+      .attr('fill', 'none').attr('stroke', '#33402A').attr('stroke-width', 1)
+      .attr('d', linkGen as never)
+
+    const tip = g.selectAll('g.t').data(leaves).join('g').attr('class', 't')
+      .attr('transform', (d) => `translate(${d.y},${d.x})`).style('cursor', 'pointer')
+    tip.append('circle').attr('r', 3).attr('fill', (d) => subColor(d.data.subfamily))
+    tip.append('text').attr('x', 9).attr('dy', '0.32em').attr('font-size', 12.5)
+      .attr('font-style', 'italic').attr('fill', '#EDF0E2')
+      .text((d) => d.data.latin ?? d.data.sp ?? '')
+    tip.append('rect').attr('x', labelW - 22).attr('y', -4).attr('width', 8).attr('height', 8).attr('rx', 2)
+      .attr('fill', (d) => RISK_COLOR[d.data.risk ?? 'not-evaluated'])
+    tip.append('rect').attr('x', -6).attr('y', -row / 2).attr('width', labelW + treeW).attr('height', row)
+      .attr('fill', 'transparent')
+      .on('mouseover', function () { d3.select((this as SVGElement).parentNode as Element).select('text').attr('fill', '#E7C766') })
+      .on('mouseout', function () { d3.select((this as SVGElement).parentNode as Element).select('text').attr('fill', '#EDF0E2') })
+      .on('click', (_e, d) => { if (d.data.sp) onSelect(d.data.sp) })
+  }, [data, onSelect])
+
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <SubfamilyRiskLegend subs={subs} style={{ padding: '7px 12px 9px', borderBottom: '1px solid var(--hairline)' }} />
+      <div ref={wrap} style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '4px 8px' }}>
+        <svg ref={svgRef} style={{ display: 'block' }} />
+      </div>
+    </div>
+  )
+}
