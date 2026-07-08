@@ -93,13 +93,16 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         const leaves = clade.leaves() as HNode[]
         const [x, y] = d3.pointer(e, wrap.current)
         if (isGenus) {
+          // pop the clickable genus tips of this clade so it's clear where to click
+          const leafSet = new Set(leaves)
+          tips.attr('r', (t) => (leafSet.has(t) ? 4 : tipR))
           const codes = new Set<string>()
           leaves.forEach((l) => (l.data.regions ?? []).forEach((c) => codes.add(c)))
           onBrushRegions?.([...codes])
           const sup = clade.data.support
           const nG = leaves.length === 1 ? '1 genus' : `${leaves.length} genera`
           setTip({ label: `${nG}${clade._sub ? ' · ' + clade._sub : ''}`
-            + (sup != null ? ` · ${sup}% bootstrap` : ''), x, y })
+            + (sup != null ? ` · ${sup}% bootstrap` : '') + ' — click a genus to open', x, y })
         } else {
           onBrush(leaves.map((l) => l.data.sp).filter(Boolean) as string[])
           setTip({ label: `${leaves.length} species${clade._sub ? ' · ' + clade._sub : ''} — click to open`, x, y })
@@ -114,7 +117,8 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         })
 
       tips.on('mouseover', function (e, d) {
-        d3.select(this).attr('r', isGenus ? 5 : 4).attr('fill', '#E7C766')
+        d3.select(this).attr('r', isGenus ? 6 : 4).attr('fill', '#E7C766').raise()
+        if (isGenus) onBrushRegions?.(d.data.regions ?? [])  // light this genus's native range
         const [x, y] = d3.pointer(e, wrap.current)
         const label = isGenus
           ? `${d.data.genus} · ${d.data.nSpecies} species — click to open`
@@ -122,6 +126,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         setTip({ label, x, y })
       }).on('mouseout', function (_e, d) {
         d3.select(this).attr('r', tipR).attr('fill', subColor(d.data.subfamily))
+        if (isGenus) onBrushRegions?.(null)
         setTip(null)
       }).on('click', (_e, d) => {
         if (isGenus) { if (d.data.genus) onGenusClick?.(d.data.genus) }
