@@ -1,6 +1,6 @@
 # PROJECT_STATE — Palmae
 
-_Last updated: 2026-07-07. Read this first when resuming._
+_Last updated: 2026-07-08. Read this first when resuming._
 
 An interactive atlas of the palm family (Arecaceae), sister to Quercus, built on the Quercus code +
 design as scaffold. See `palms-spec.md` for the full spec, `RESEARCH.md` for the evidence base, and
@@ -20,7 +20,8 @@ The frontend has four linked surfaces plus About/Sources:
 - **Workbench** (default landing / home) — radial tree + world map, fully bidirectional brushing,
   search-to-locate, clade drill-in, region drill-down. A **tree toggle** switches between the all-species
   **Faurby 2016** supertree (2,539 tips) and the modern bootstrap-supported **Yao 2023** genus backbone
-  (177 genera). Map hover shows region name; genus hover brushes the map + shows support.
+  (177 genera). Map hover shows region name; genus hover brushes the map + shows support; **clicking a
+  genus** opens the Field Guide filtered to exactly that genus (a clearable "Genus · X ✕" pill).
 - **World Atlas** — species-richness choropleth.
 - **Palm Line** — the money-shot (native occurrences coloured by coldest-month mean temp; frost line +
   renegades). Nav position: between World Atlas and Field Guide.
