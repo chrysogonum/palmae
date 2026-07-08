@@ -162,6 +162,13 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
           rather than a paywalled supplement. The IUCN Red List overlay is used non-commercially. Every one
           is credited in full, with its DOI, on the sources page.
         </p>
+        <p className="page-p" style={{ marginTop: 22 }}>
+          Built by{' '}
+          <a href="https://github.com/chrysogonum" target="_blank" rel="noreferrer"
+            style={{ color: 'var(--gold)', textDecoration: 'none', borderBottom: '1px solid rgba(217,178,90,.4)' }}>
+            Peter&nbsp;Repetti
+          </a>.
+        </p>
         <button className="page-cta" onClick={() => go('sources')}>
           Sources &amp; bibliography →
         </button>
