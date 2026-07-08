@@ -127,6 +127,18 @@ export function About({ go }: { go: PageNav }) {
           </p>
         </div>
 
+        <h2 className="page-h2">On the name</h2>
+        <p className="page-p">
+          Botanically the family is <em>Arecaceae</em> — the type-based name (after the genus <em>Areca</em>),
+          and the name used throughout the taxonomy and data here. <em>Palmae</em>, the wordmark, is not an
+          oversight: it is one of just eight families whose traditional name the{' '}
+          <em>International Code of Nomenclature</em> (Art. 18.5) conserves as an equally valid alternative to
+          the standard <em>-aceae</em> form (alongside Gramineae/Poaceae and Compositae/Asteraceae). Arecaceae
+          holds nomenclatural priority; Palmae is the name the palm world has always kept close — Dransfield
+          and colleagues' <em>Genera Palmarum</em>, and the International Palm Society's journal{' '}
+          <em>PALMS</em> — so we fly it as a deliberate nod to that tradition, not a lapse of it.
+        </p>
+
         <h2 className="page-h2">Built for the palm community</h2>
         <p className="page-p">
           Attribution is a first-class surface here, not a footnote. The underlying datasets carry their own
