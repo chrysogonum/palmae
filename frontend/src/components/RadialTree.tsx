@@ -35,6 +35,11 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
   const store = useRef<{ root: HNode; links: LinkSel; tips: TipSel; reset: () => void } | null>(null)
   const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null)
   const [ready, setReady] = useState(false)
+  // What the tree should fall back to on mouse-out: a selected region's species
+  // (highlightSlugs) or a located species path. Kept in a ref so reset() restores
+  // the standing selection instead of wiping to base colours.
+  const persistRef = useRef<{ hl: Set<string> | null; loc: string | null }>({ hl: highlightSlugs, loc: locate })
+  persistRef.current = { hl: highlightSlugs, loc: locate }
 
   useEffect(() => {
     let cancelled = false
@@ -75,10 +80,33 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         .attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y},0)`)
         .attr('r', tipR).attr('fill', (d) => subColor(d.data.subfamily)).style('cursor', 'pointer')
 
+      const leaves = root.leaves() as HNode[]
       const reset = () => {
         links.interrupt().attr('stroke-opacity', 0.5).attr('stroke-width', 0.5)
           .attr('stroke', (d) => subColor((d.target as HNode)._sub))
         tips.interrupt().attr('r', tipR).attr('fill', (d) => subColor(d.data.subfamily))
+        // restore the standing selection (a region's species, or a located species)
+        // so hovering the tree explores on top of it rather than erasing it
+        const { hl, loc } = persistRef.current
+        if (hl && hl.size) {
+          const marked = new Set(leaves.filter((l) => l.data.sp && hl.has(l.data.sp)))
+          const onPath = new Set<HNode>()
+          marked.forEach((l) => l.ancestors().forEach((a) => onPath.add(a as HNode)))
+          links.attr('stroke-opacity', (l) => (onPath.has(l.target as HNode) ? 0.9 : 0.05))
+            .attr('stroke-width', (l) => (onPath.has(l.target as HNode) ? 1 : 0.5))
+            .attr('stroke', (l) => (onPath.has(l.target as HNode) ? '#E7C766' : subColor((l.target as HNode)._sub)))
+          tips.attr('r', (t) => (marked.has(t) ? 3 : tipR))
+            .attr('fill', (t) => (marked.has(t) ? '#E7C766' : subColor(t.data.subfamily)))
+        } else if (loc) {
+          const node = leaves.find((l) => l.data.sp === loc)
+          if (node) {
+            const path = new Set(node.ancestors())
+            links.attr('stroke-opacity', (l) => (path.has(l.target as HNode) ? 1 : 0.08))
+              .attr('stroke-width', (l) => (path.has(l.target as HNode) ? 1.5 : 0.5))
+              .attr('stroke', (l) => (path.has(l.target as HNode) ? '#E7C766' : subColor((l.target as HNode)._sub)))
+            tips.filter((t) => t === node).attr('r', 5).attr('fill', '#E7C766')
+          }
+        }
       }
       store.current = { root, links, tips, reset }
       setReady(true)  // signal the locate/highlight effect to (re)apply now the tree exists
@@ -127,8 +155,8 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
           ? `${d.data.genus} · ${d.data.nSpecies} species — click to open`
           : (d.data.latin ?? d.data.sp ?? '')
         setTip({ label, x, y })
-      }).on('mouseout', function (_e, d) {
-        d3.select(this).attr('r', tipR).attr('fill', subColor(d.data.subfamily))
+      }).on('mouseout', () => {
+        reset()  // restores base + any standing region/located selection
         if (isGenus) onBrushRegions?.(null)
         setTip(null)
       }).on('click', (_e, d) => {

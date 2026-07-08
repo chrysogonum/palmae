@@ -24,8 +24,15 @@ export function RangeMap({ native, introduced, color }: {
       const features = geo.features as Feature[]
       const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
+      // zoom the map to the species' range (native + introduced) with padding for
+      // context, so a single-region endemic fills the frame instead of a lost speck.
+      const rangeCodes = new Set([...native, ...introduced])
+      const rangeFeats = features.filter((f) => rangeCodes.has(f.properties.LEVEL3_COD))
+      const fitTarget = { type: 'FeatureCollection',
+        features: rangeFeats.length ? rangeFeats : features } as never
+      const pad = Math.min(W, H) * 0.22
       const projection = d3.geoNaturalEarth1()
-        .fitSize([W, H - 4], { type: 'FeatureCollection', features } as never)
+        .fitExtent([[pad, pad], [W - pad, H - pad]], fitTarget)
       const path = d3.geoPath(projection)
       const isNat = (d: Feature) => nat.has(d.properties.LEVEL3_COD)
       const isIntro = (d: Feature) => intro.has(d.properties.LEVEL3_COD)
@@ -46,10 +53,11 @@ export function RangeMap({ native, introduced, color }: {
           d3.select(this).attr('stroke', isIntro(d) ? color : '#0d110c').attr('stroke-width', isNat(d) || isIntro(d) ? 0.8 : 0.3)
           setHover(null)
         })
-      // drop antimeridian smears after layout (see AtlasMap)
+      // drop only true frame-spanning antimeridian smears (higher threshold than the
+      // world maps, since a zoomed continental view has legitimately large regions)
       requestAnimationFrame(() => {
         g.selectAll<SVGPathElement, unknown>('path').each(function () {
-          try { if (this.getBBox().width > W * 0.6) this.remove() } catch { /* detached */ }
+          try { if (this.getBBox().width > W * 0.92) this.remove() } catch { /* detached */ }
         })
       })
     })

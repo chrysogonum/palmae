@@ -30,7 +30,11 @@ const eyebrow: React.CSSProperties = {
   textTransform: 'uppercase', color: 'var(--ink-faint)',
 }
 
-export function SubfamilyRiskLegend({ subs, style }: { subs: string[]; style?: React.CSSProperties }) {
+export const SUBFAMILIES_ALL = ['Arecoideae', 'Coryphoideae', 'Calamoideae', 'Ceroxyloideae', 'Nypoideae']
+
+export function SubfamilyRiskLegend({ subs, style, showRisk = true }: {
+  subs: string[]; style?: React.CSSProperties; showRisk?: boolean
+}) {
   return (
     <div style={{
       display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 16px',
@@ -42,10 +46,12 @@ export function SubfamilyRiskLegend({ subs, style }: { subs: string[]; style?: R
           {subs.map((s) => item(subColor(s), s, false))}
         </span>
       )}
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={eyebrow}>■ risk</span>
-        {(['threatened', 'not-threatened', 'not-evaluated'] as const).map((r) => item(RISK_COLOR[r], RISK_LABEL[r], true))}
-      </span>
+      {showRisk && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={eyebrow}>■ risk</span>
+          {(['threatened', 'not-threatened', 'not-evaluated'] as const).map((r) => item(RISK_COLOR[r], RISK_LABEL[r], true))}
+        </span>
+      )}
     </div>
   )
 }

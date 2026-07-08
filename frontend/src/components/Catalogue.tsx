@@ -136,7 +136,7 @@ export function Detail({ slug, onSeeOnTree }: {
 
   const c = d.conservation
   return (
-    <div style={{ overflowY: 'auto', padding: '26px 32px', maxWidth: 720 }}>
+    <div style={{ height: '100%', overflowY: 'auto', padding: '26px 32px', maxWidth: 720 }}>
       {d.photo && photoOk && (() => {
         const img = (
           <img src={d.photo.url} alt={d.latin} loading="lazy" onError={() => setPhotoOk(false)} style={{

@@ -4,6 +4,7 @@ import { CladeFocus } from './CladeFocus'
 import { LinkedMap } from './LinkedMap'
 import { RegionPanel } from './RegionPanel'
 import { Detail } from './Catalogue'
+import { SubfamilyRiskLegend, SUBFAMILIES_ALL } from './Legend'
 import { api } from '../api/client'
 import type { SearchResult, TreeNode } from '../api/types'
 
@@ -37,6 +38,10 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   const [focus, setFocus] = useState<{ data: TreeNode; label: string } | null>(null)
   const [locate, setLocate] = useState<string | null>(null)
   const [region, setRegion] = useState<{ code: string; name: string } | null>(null)
+  // mirror of `region` in a ref so the stable brush callbacks can restore the
+  // region's map highlight on tree mouse-out without rebuilding the tree
+  const regionRef = useRef(region)
+  regionRef.current = region
   const [treeHighlight, setTreeHighlight] = useState<Set<string> | null>(null)
   const [treeSource, setTreeSource] = useState<'species' | 'genera'>('species')
   const [genera, setGenera] = useState<{ genus: string; nSpecies: number }[]>([])
@@ -64,12 +69,15 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
     return codes
   }, [])
 
+  // on mouse-out (null) fall back to the standing region highlight, not blank,
+  // so exploring the tree doesn't erase a selected region on the map
+  const restoreRegion = () => (regionRef.current ? new Set([regionRef.current.code]) : null)
   const onBrush = useCallback((slugs: string[] | null) => {
-    setHighlight(slugs ? regionsFor(slugs) : null)
+    setHighlight(slugs ? regionsFor(slugs) : restoreRegion())
   }, [regionsFor])
   // genus tree brushes the map by region codes directly (no per-species slugs)
   const onBrushRegions = useCallback((codes: string[] | null) => {
-    setHighlight(codes ? new Set(codes) : null)
+    setHighlight(codes ? new Set(codes) : restoreRegion())
   }, [])
   // Toggle trees while KEEPING the selected species: re-trace it on the species tree,
   // or highlight its genus on the genus tree. The selection (card) persists across
@@ -155,6 +163,12 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
             <RadialTree source={treeSource} onBrush={onBrush} onBrushRegions={onBrushRegions}
               onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
               locate={locate} locateGenus={locateGenus} highlightSlugs={treeHighlight} />
+            <div style={{
+              position: 'absolute', left: 14, bottom: 12, zIndex: 3, maxWidth: 300,
+              background: 'rgba(13,17,12,.6)', borderRadius: 8, padding: '6px 10px', backdropFilter: 'blur(2px)',
+            }}>
+              <SubfamilyRiskLegend subs={SUBFAMILIES_ALL} showRisk={false} />
+            </div>
           </>
         )}
       </section>
