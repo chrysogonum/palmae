@@ -47,8 +47,13 @@ export function PalmLine({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
       svg.selectAll('*').remove()
 
       const features = geo.features as Feature[]
+      // Reserve the right edge for the renegades panel so the map (and its dense
+      // SE-Asian / Pacific dots) never tucks underneath it; fitExtent then nudges
+      // the whole world down-and-left into the clear area.
+      const panelReserve = W >= 1000 ? 300 : 24
       const projection = d3.geoNaturalEarth1()
-        .fitSize([W, H - 8], { type: 'FeatureCollection', features } as never)
+        .fitExtent([[14, 26], [W - panelReserve, H - 24]],
+          { type: 'FeatureCollection', features } as never)
       const path = d3.geoPath(projection)
 
       // muted land silhouette
@@ -62,16 +67,29 @@ export function PalmLine({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         })
       })
 
+      // soft bloom so the occupied warm belt reads as one luminous band rather than
+      // a scatter of easily-lost specks
+      const defs = svg.append('defs')
+      defs.append('filter').attr('id', 'pl-glow')
+        .attr('x', '-40%').attr('y', '-40%').attr('width', '180%').attr('height', '180%')
+        .append('feGaussianBlur').attr('stdDeviation', 2.6)
+      const xy = (d: PalmLineData['points'][number]) => projection([d.lon, d.lat]) ?? [-99, -99]
+
+      svg.append('g').attr('filter', 'url(#pl-glow)').style('pointer-events', 'none')
+        .selectAll('circle').data(data.points.filter((d) => d.native)).join('circle')
+        .attr('cx', (d) => xy(d)[0]).attr('cy', (d) => xy(d)[1])
+        .attr('r', (d) => (renegSet.has(d.sp) ? 3.8 : 3))
+        .attr('fill', (d) => cmmtColor(d.cmmt)).attr('opacity', 0.4)
+
       // occurrence points, coloured by CMMT (natives solid, introduced hollow)
       const pts = svg.append('g')
       pts.selectAll('circle').data(data.points).join('circle')
-        .attr('cx', (d) => projection([d.lon, d.lat])?.[0] ?? -99)
-        .attr('cy', (d) => projection([d.lon, d.lat])?.[1] ?? -99)
-        .attr('r', (d) => (renegSet.has(d.sp) ? 2.6 : 1.5))
+        .attr('cx', (d) => xy(d)[0]).attr('cy', (d) => xy(d)[1])
+        .attr('r', (d) => (renegSet.has(d.sp) ? 3 : 2.2))
         .attr('fill', (d) => (d.native ? cmmtColor(d.cmmt) : 'none'))
         .attr('stroke', (d) => (d.native ? 'none' : cmmtColor(d.cmmt)))
-        .attr('stroke-width', 0.8)
-        .attr('opacity', (d) => (d.native ? 0.82 : 0.6))
+        .attr('stroke-width', 1)
+        .attr('opacity', (d) => (d.native ? 0.9 : 0.7))
         .style('cursor', 'pointer')
         .on('mousemove', function (event, d) {
           const [x, y] = d3.pointer(event, wrap.current)
@@ -87,9 +105,9 @@ export function PalmLine({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         .join('circle')
         .attr('cx', (d) => projection([d.lon, d.lat])?.[0] ?? -99)
         .attr('cy', (d) => projection([d.lon, d.lat])?.[1] ?? -99)
-        .attr('r', 3.4).attr('fill', 'none')
-        .attr('stroke', '#D9B25A').attr('stroke-width', 1)
-        .attr('opacity', 0.9).style('pointer-events', 'none')
+        .attr('r', 4.4).attr('fill', 'none')
+        .attr('stroke', '#EBC66A').attr('stroke-width', 1.4)
+        .attr('opacity', 0.95).style('pointer-events', 'none')
         .attr('data-sp', (d) => d.sp)
     })
     return () => { cancelled = true }
@@ -101,9 +119,9 @@ export function PalmLine({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
     if (!g) return
     g.querySelectorAll('circle').forEach((c) => {
       const on = focus && c.getAttribute('data-sp') === focus
-      c.setAttribute('r', on ? '6' : '3.4')
-      c.setAttribute('stroke-width', on ? '2' : '1')
-      c.setAttribute('opacity', focus ? (on ? '1' : '0.25') : '0.9')
+      c.setAttribute('r', on ? '7.5' : '4.4')
+      c.setAttribute('stroke-width', on ? '2.4' : '1.4')
+      c.setAttribute('opacity', focus ? (on ? '1' : '0.2') : '0.95')
     })
   }, [focus, data])
 
