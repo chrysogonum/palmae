@@ -784,3 +784,17 @@ body {
   align-self: flex-end; margin: 10px; background: var(--panel); color: var(--ink-muted);
   border: 1px solid var(--hairline); border-radius: 7px; padding: 5px 11px; cursor: pointer; font-size: 13px;
 }
+
+/* About pipeline: dataset steps link to their citation */
+button.pipe-step { font: inherit; color: inherit; text-align: left; }
+.pipe-step.link { cursor: pointer; transition: border-color .15s; }
+.pipe-step.link:hover { border-color: var(--gold); }
+.pipe-step.link:hover .pipe-k { color: var(--gold); }
+
+/* Sources: flash the citation jumped to from an About pipeline link */
+.bib-hl { animation: bibflash 3s ease-out; border-radius: 8px; }
+@keyframes bibflash {
+  0%   { background: rgba(217,178,90,.32); }
+  50%  { background: rgba(217,178,90,.22); }
+  100% { background: transparent; }
+}

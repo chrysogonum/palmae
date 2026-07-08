@@ -14,6 +14,7 @@ export default function App() {
   const [cov, setCov] = useState<Coverage | null>(null)
   const [treeLocate, setTreeLocate] = useState<{ slug: string; n: number } | null>(null)
   const [guideFilter, setGuideFilter] = useState<{ q: string; n: number } | null>(null)
+  const [sourcesFocus, setSourcesFocus] = useState<{ id: string; n: number } | null>(null)
   useEffect(() => { api.coverage().then(setCov).catch(() => {}) }, [])
 
   // cross-link: "see on the tree" from any species card → Workbench, traced on the tree
@@ -25,6 +26,11 @@ export default function App() {
   const seeGenus = useCallback((genus: string) => {
     setGuideFilter((g) => ({ q: genus, n: (g?.n ?? 0) + 1 }))
     setSurface('guide')
+  }, [])
+  // cross-link: click a pipeline step on About → Sources, scrolled to that citation
+  const goToSource = useCallback((id: string) => {
+    setSourcesFocus((f) => ({ id, n: (f?.n ?? 0) + 1 }))
+    setSurface('sources')
   }, [])
 
   return (
@@ -69,8 +75,8 @@ export default function App() {
           : surface === 'workbench' ? <Workbench locateReq={treeLocate} onSeeOnTree={seeOnTree} onGenusClick={seeGenus} />
           : surface === 'atlas' ? <AtlasMap onSeeOnTree={seeOnTree} />
           : surface === 'guide' ? <Catalogue onSeeOnTree={seeOnTree} filter={guideFilter} />
-          : surface === 'about' ? <About go={setSurface} />
-          : <Sources go={setSurface} />}
+          : surface === 'about' ? <About go={setSurface} onSource={goToSource} />
+          : <Sources go={setSurface} focus={sourcesFocus} />}
       </main>
     </div>
   )

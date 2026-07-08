@@ -7,12 +7,14 @@ export type PageNav = (s: 'workbench' | 'atlas' | 'guide' | 'palmline' | 'about'
 /* ================================================================== */
 /* About / How it works                                                */
 /* ================================================================== */
-const PIPELINE = [
-  { k: 'WCVP', v: 'names & synonymy' },
-  { k: 'PalmTraits 1.0', v: 'morphology' },
-  { k: 'GBIF × WorldClim', v: 'points & climate' },
-  { k: 'Faurby 2016', v: 'phylogeny' },
-  { k: 'Bellot 2022', v: 'extinction risk' },
+// `ref` is the data_source id to jump to on the Sources page (omit for the
+// infrastructure steps, which aren't cited datasets).
+const PIPELINE: { k: string; v: string; ref?: string }[] = [
+  { k: 'WCVP', v: 'names & synonymy', ref: 'wcvp' },
+  { k: 'PalmTraits 1.0', v: 'morphology', ref: 'palmtraits' },
+  { k: 'GBIF × WorldClim', v: 'points & climate', ref: 'gbif' },
+  { k: 'Faurby 2016', v: 'phylogeny', ref: 'faurby2016' },
+  { k: 'Bellot 2022', v: 'extinction risk', ref: 'bellot2022' },
   { k: 'PostGIS', v: 'spatial database' },
   { k: 'the atlas', v: 'the view you use' },
 ]
@@ -58,7 +60,7 @@ const CAVEATS = [
   },
 ]
 
-export function About({ go }: { go: PageNav }) {
+export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) => void }) {
   const [cov, setCov] = useState<Coverage | null>(null)
   useEffect(() => { api.coverage().then(setCov).catch(() => {}) }, [])
   const offTree = cov ? 100 - cov.tree_pct : 14
@@ -83,13 +85,26 @@ export function About({ go }: { go: PageNav }) {
           predicted extinction risk is the one modelled layer, and it is always named as the Bellot et al.
           2022 prediction, never presented as ground truth.
         </p>
+        <p className="page-note" style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
+          Each dataset step links to its full citation.
+        </p>
         <div className="pipe">
           {PIPELINE.map((s, i) => (
             <div className="pipe-cell" key={s.k}>
-              <div className="pipe-step">
-                <div className="pipe-k">{s.k}</div>
-                <div className="pipe-v">{s.v}</div>
-              </div>
+              {s.ref
+                ? (
+                  <button className="pipe-step link" onClick={() => onSource?.(s.ref!)}
+                    title={`See the citation for ${s.k}`}>
+                    <div className="pipe-k">{s.k}</div>
+                    <div className="pipe-v">{s.v}</div>
+                  </button>
+                )
+                : (
+                  <div className="pipe-step">
+                    <div className="pipe-k">{s.k}</div>
+                    <div className="pipe-v">{s.v}</div>
+                  </div>
+                )}
               {i < PIPELINE.length - 1 && <span className="pipe-arrow" aria-hidden>→</span>}
             </div>
           ))}
@@ -167,9 +182,27 @@ function formatCitation(s: DataSource): string {
   return parts.join(' ')
 }
 
-export function Sources({ go }: { go: PageNav }) {
+export function Sources({ go, focus }: { go: PageNav; focus?: { id: string; n: number } | null }) {
   const [sources, setSources] = useState<DataSource[]>([])
+  const [hl, setHl] = useState<string | null>(null)
   useEffect(() => { api.sources().then(setSources).catch(() => {}) }, [])
+  // arriving from an About pipeline link → flash that citation and scroll to it.
+  // Set the highlight immediately (it applies the moment the <li> renders); the
+  // list loads async, so retry only the scroll until the target is in the DOM.
+  useEffect(() => {
+    if (!focus) return
+    setHl(focus.id)
+    const timers: number[] = [window.setTimeout(() => setHl(null), 2800)]
+    let tries = 0
+    const tick = () => {
+      const el = document.getElementById(`ref-${focus.id}`)
+      if (el) el.scrollIntoView({ block: 'center' })
+      else if (tries++ < 30) timers.push(window.setTimeout(tick, 70))
+    }
+    timers.push(window.setTimeout(tick, 60))
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.n])
 
   return (
     <div className="page-wrap">
@@ -183,7 +216,7 @@ export function Sources({ go }: { go: PageNav }) {
 
         <ol className="biblio">
           {sources.map((s) => (
-            <li className="bib" key={s.id} id={`ref-${s.id}`}>
+            <li className={`bib${hl === s.id ? ' bib-hl' : ''}`} key={s.id} id={`ref-${s.id}`}>
               <div className="bib-head">
                 <span className="bib-name">{s.name}</span>
                 {s.role && <span className="bib-role">{s.role}</span>}
