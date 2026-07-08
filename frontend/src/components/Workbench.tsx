@@ -72,10 +72,19 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
     setHighlight(codes ? new Set(codes) : null)
   }, [])
   const switchTree = useCallback((src: 'species' | 'genera') => {
+    const activeSlug = locate ?? selected  // the species currently in focus, if any
     setTreeSource(src)
-    setFocus(null); setLocate(null); setLocateGenus(null); setRegion(null)
+    setFocus(null); setLocate(null); setRegion(null)
     setTreeHighlight(null); setHighlight(null); setSelected(null)
-  }, [])
+    // carry a focused species over to the genus tree as its genus (slug = "genus-epithet")
+    if (src === 'genera' && activeSlug) {
+      const g = activeSlug.split('-')[0]
+      const genus = g.charAt(0).toUpperCase() + g.slice(1)
+      setLocateGenus((prev) => ({ genus, n: (prev?.n ?? 0) + 1 }))
+    } else {
+      setLocateGenus(null)
+    }
+  }, [locate, selected])
   const locateGenusByName = useCallback((genus: string) => {
     setLocateGenus((g) => ({ genus, n: (g?.n ?? 0) + 1 }))
   }, [])

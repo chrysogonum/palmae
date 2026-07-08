@@ -38,6 +38,8 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
 
   useEffect(() => {
     let cancelled = false
+    store.current = null   // invalidate the old tree while the new one loads
+    setReady(false)        // so the locate/highlight effects re-apply once it's built
     const isGenus = source === 'genera'
     const tipR = isGenus ? 2.4 : 1.4
     ;(isGenus ? api.treeGenera() : api.tree()).then((data) => {
