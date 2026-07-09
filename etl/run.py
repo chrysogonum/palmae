@@ -190,6 +190,11 @@ def load_ranges(session) -> None:
                 code = d["tdwg_code"]
                 if not code or code in seen:
                     continue
+                # Don't assert a doubtful/extinct WCVP occurrence as part of the range —
+                # previously these silently defaulted to "native", over-stating ranges.
+                status = d.get("status") or ""
+                if "doubtful" in status or "extinct" in status:
+                    continue
                 seen.add(code)
                 origin = "introduced" if d.get("establishment") == "introduced" else "native"
                 rows.append({"species_id": sid, "tdwg_code": code,

@@ -174,7 +174,7 @@ export function Detail({ slug, onSeeOnTree }: {
       </div>
 
       <div style={{ display: 'flex', gap: 10, margin: '18px 0', flexWrap: 'wrap' }}>
-        <Badge color={c.riskColor}>{c.riskLabel}{c.basis === 'predicted' ? ' (predicted)' : c.basis === 'assessed' ? ' (IUCN)' : ''}</Badge>
+        <Badge color={c.riskColor}>{c.riskLabel}{c.basis === 'predicted' ? ' (predicted)' : c.basis === 'assessed' ? ' (assessed)' : ''}</Badge>
         {c.probability != null && <Badge muted>p = {c.probability}</Badge>}
         {d.onTree && (onSeeOnTree
           ? (
@@ -255,7 +255,7 @@ export function Detail({ slug, onSeeOnTree }: {
 
       {c.source && (
         <div style={{ marginTop: 22, fontSize: 11.5, color: 'var(--ink-faint)' }}>
-          Risk: {c.basis === 'assessed' ? 'formal IUCN assessment' : 'model prediction'} · {c.source}
+          Risk: {c.basis === 'assessed' ? 'IUCN Red List assessment, via ' : 'model prediction · '}{c.source}
         </div>
       )}
     </div>

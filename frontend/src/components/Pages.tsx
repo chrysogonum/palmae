@@ -22,13 +22,14 @@ const PIPELINE: { k: string; v: string; ref?: string }[] = [
 const CAVEATS = [
   {
     t: 'Extinction risk is mostly a model prediction, not an assessment',
-    d: `Only about a fifth of palms carry a formal IUCN Red List assessment. The rest are covered by the
-        peer-reviewed machine-learning model of Bellot et al. (2022), which predicts threatened /
-        not-threatened from range, traits and environment. Every card says which it is — "Threatened
-        (IUCN)" vs "Threatened (predicted)" — and the model's own two published scenarios put the
-        threatened share of covered species between 50% (high-precision) and 72% (high-sensitivity). We
-        report that as a range, never a single tidy number. Species with neither an assessment nor a
-        prediction are shown as "not evaluated," which is not the same as "safe."`,
+    d: `The entire risk layer comes from Bellot et al. (2022). About a fifth of palms carry a formal IUCN
+        Red List assessment; those enter through Bellot's compilation, which used them as ground truth. The
+        rest get the paper's peer-reviewed machine-learning prediction of threatened / not-threatened from
+        range, traits and environment. Every card says which it is — "Threatened (assessed)" vs "Threatened
+        (predicted)". We do not query the Red List directly, and we do not display the granular category
+        (CR/EN/VU) or assessment year. The model's own two published scenarios put the threatened share of
+        covered species between 50% (high-precision) and 72% (high-sensitivity); we report that as a range,
+        never a single tidy number. Species with neither are shown as "not evaluated," which is not "safe."`,
   },
   {
     t: 'The coldest-month temperature layer is derived, not measured on the palm',
@@ -186,8 +187,9 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
           Attribution is a first-class surface here, not a footnote. The underlying datasets carry their own
           licences: WCVP is CC-BY, PalmTraits 1.0 and the Faurby tree are open (CC0), GBIF records are CC0 or
           CC-BY, WorldClim is CC-BY 4.0, and the Bellot risk model is CC-BY 4.0 from the authors' own release
-          rather than a paywalled supplement. The IUCN Red List overlay is used non-commercially. Every one
-          is credited in full, with its DOI, on the sources page.
+          rather than a paywalled supplement. IUCN Red List assessments underlie Bellot's assessed class and
+          are credited to the Red List and its Palm Specialist Group. Every dataset is credited in full, with
+          its DOI, on the sources page.
         </p>
         <p className="page-p" style={{ marginTop: 22 }}>
           Built by{' '}

@@ -73,9 +73,11 @@ DATA_SOURCES = [
     # --- Phylogeny ------------------------------------------------------------
     {"id": "faurby2016", "name": "Faurby et al. 2016 — complete palm phylogeny",
      "role": "phylogenetic backbone (species-complete)", "license": "CC0 (Dryad)",
-     "note": "The only complete species-level palm tree (~2,539 tips); species without "
-             "molecular data are placed by taxonomic constraint, so those terminal "
-             "placements are shown as uncertain. Tree file bundled with PalmTraits 1.0.",
+     "note": "The only complete species-level palm tree (~2,539 tips). It is a supertree: "
+             "species without molecular data are grafted by taxonomic constraint. It carries "
+             "branch lengths and dates, but the atlas currently renders it as a cladogram "
+             "(topology only) and does not yet flag which tips are molecularly supported. "
+             "Tree file bundled with PalmTraits 1.0.",
      "authors": "Faurby S, Eiserhardt WL, Baker WJ, Svenning J-C",
      "year": 2016,
      "title": "An all-evidence species-level supertree for the palms (Arecaceae)",
@@ -119,9 +121,10 @@ DATA_SOURCES = [
     {"id": "gbif", "name": "GBIF — Global Biodiversity Information Facility",
      "role": "occurrence points", "license": "CC0 / CC-BY (per record, filtered)",
      "note": "Georeferenced palm records (family taxonKey 7681; ~1.1M georeferenced). "
-             "Point evidence for ranges, filtered to CC0/CC-BY; each ingest is a "
-             "citable Download DOI. Points are evidence; TDWG regions are authority — "
-             "the two are never merged.",
+             "Point evidence for climate, filtered to CC0/CC-BY and to living/managed/fossil "
+             "records removed. This build queries the GBIF search API (not a snapshot); a "
+             "citable GBIF Download DOI is the intended provenance for a production run. Points "
+             "are evidence; TDWG regions are authority — the two are never merged.",
      "authors": "GBIF Secretariat",
      "year": 2024,
      "title": "GBIF Occurrence Download (Arecaceae)",
@@ -157,14 +160,17 @@ DATA_SOURCES = [
      "doi": "10.1038/s41559-022-01858-0",
      "url": "https://doi.org/10.1038/s41559-022-01858-0"},
     {"id": "iucn", "name": "IUCN Red List of Threatened Species (Arecaceae)",
-     "role": "formal conservation status (assessed subset)", "license": "non-commercial · display-only",
-     "note": "Formal Red List category for the ~20% of palms assessed, via the v4 API. "
-             "Queried and displayed with attribution; NOT rehosted/redistributed (IUCN "
-             "terms). Assessments contributed by the IUCN SSC Palm Specialist Group.",
+     "role": "origin of the assessed-species labels (via Bellot 2022)", "license": "credited to IUCN / Palm Specialist Group",
+     "note": "About a fifth of palms carry a formal Red List assessment. Those assessments "
+             "reach the atlas through Bellot et al. 2022, which used them as ground truth — "
+             "the atlas does NOT query the Red List API and does NOT display Red List "
+             "categories (CR/EN/VU) or assessment years. Assessments are contributed by the "
+             "IUCN SSC Palm Specialist Group. (Directly integrating the Red List is a planned "
+             "improvement.)",
      "authors": "IUCN; IUCN SSC Palm Specialist Group",
-     "year": 2025,
+     "year": None,
      "title": "The IUCN Red List of Threatened Species",
-     "venue": "IUCN Red List API v4",
+     "venue": "IUCN Red List",
      "doi": None,
      "url": "https://www.iucnredlist.org/"},
     {"id": "bgci", "name": "BGCI GlobalTreeSearch & PlantSearch",
@@ -192,8 +198,10 @@ DATA_SOURCES = [
      "url": "https://doi.org/10.1038/s41598-018-23147-2"},
     {"id": "worldclim", "name": "WorldClim 2.1",
      "role": "climate surfaces (present & future)", "license": "CC-BY 4.0",
-     "note": "Global temperature/precipitation surfaces — coldest-month temperature for "
-             "the frost-line map, and CMIP6 projections for the warming/future axis.",
+     "note": "Global temperature/precipitation surfaces. The atlas samples the coldest-month "
+             "mean temperature for the frost-line map at 10-arc-minute resolution (~18.5 km "
+             "cells) — not the 1-km grid named in the paper title. (The published surfaces are "
+             "offered down to 30 arc-seconds / ~1 km.)",
      "authors": "Fick SE, Hijmans RJ",
      "year": 2017,
      "title": "WorldClim 2: new 1-km spatial resolution climate surfaces for global land areas",
