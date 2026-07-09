@@ -98,9 +98,9 @@ def test_conflicted_node_exists():
 
 
 def test_conservation_assessments_valid():
-    # Palm conservation comes from Bellot et al. 2022 (predicted + assessed classes),
-    # one row per species, every one resolving to an accepted taxon. Red List categories
-    # are NOT loaded (iucn_category stays null); risk_basis carries assessed vs predicted.
+    # Palm conservation is the Bellot 2022 prediction with the real IUCN Red List (API v4)
+    # overlaid: one row per species, every one resolving to an accepted taxon. risk_basis
+    # carries assessed vs predicted; assessed rows carry a real iucn_category.
     assert _scalar("select count(distinct species_id) from conservation_assessment") >= 300
     orphans = _scalar("""
         select count(*) from conservation_assessment c
@@ -122,6 +122,13 @@ def test_conservation_assessments_valid():
         select count(*) from conservation_assessment
         where risk_basis = 'predicted' and prediction_probability is not null
     """) >= 1
+    # real IUCN categories are loaded (v4 overlay): several distinct categories, and
+    # assessed rows carry one. (This invariant was oak-valid, then briefly false during
+    # the Bellot-only window, and is true again now the Red List is wired up.)
+    assert _scalar("select count(distinct iucn_category) from conservation_assessment "
+                   "where iucn_category is not null") >= 5
+    assert _scalar("select count(*) from conservation_assessment "
+                   "where risk_basis='assessed' and iucn_category is not null") >= 300
 
 
 def test_infrageneric_placement():
