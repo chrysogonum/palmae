@@ -36,3 +36,11 @@ data/yao2023/*.rar
 
 # Parked dead oak scaffold (git history covers reversibility now)
 .deadcode-frontend/
+
+# Working/session-state docs — kept local, not published. (Design docs —
+# DECISIONS.md, palms-spec.md, RESEARCH.md, FACT_LOCK.md — stay tracked.)
+/PROJECT_STATE.md
+/HANDOFF.md
+/NEXT.md
+/docs/EXPERT_REVIEW.md
+/docs/IUCN_ISSUE_FOR_QUERCUS.md
