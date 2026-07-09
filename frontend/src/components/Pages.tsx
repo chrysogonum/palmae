@@ -196,6 +196,11 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
           <a href="https://bsky.app/profile/monstera999.bsky.social" target="_blank" rel="noreferrer"
             style={{ color: 'var(--gold)', textDecoration: 'none', borderBottom: '1px solid rgba(217,178,90,.4)' }}>
             Peter&nbsp;Repetti
+          </a>.{' '}
+          The full source — data pipeline, API, and interface — is open on{' '}
+          <a href="https://github.com/chrysogonum/palmae" target="_blank" rel="noreferrer"
+            style={{ color: 'var(--gold)', textDecoration: 'none', borderBottom: '1px solid rgba(217,178,90,.4)' }}>
+            GitHub
           </a>.
         </p>
         <button className="page-cta" onClick={() => go('sources')}>
