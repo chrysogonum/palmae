@@ -41,10 +41,15 @@ def clear(session) -> None:
 
 
 def load_sources(session) -> None:
+    # merge (upsert on the `id` PK), not add — so this can be re-run standalone
+    # against a live DB to pick up newly-added citations without colliding. This is
+    # the citation-drift guard: a maintainer who adds a source and re-runs only this
+    # step gets the new rows instead of an IntegrityError (which historically led to
+    # the step being skipped and the Sources page silently under-citing).
     for s in sources.DATA_SOURCES:
-        session.add(m.DataSource(**s))
+        session.merge(m.DataSource(**s))
     session.flush()
-    print(f"  sources: {len(sources.DATA_SOURCES)} registered")
+    print(f"  sources: {len(sources.DATA_SOURCES)} registered (upsert)")
 
 
 def _slugify(genus: str | None, scientific_name: str, used: set[str]) -> str:
