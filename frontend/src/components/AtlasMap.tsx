@@ -10,36 +10,32 @@ interface Feature {
   properties: { LEVEL3_COD: string; LEVEL3_NAM: string }
   geometry: GeoJSON.Geometry
 }
-interface Hover { name: string; value: number | null; x: number; y: number }
+interface Hover { name: string; richness: number; rainfall: number | null; x: number; y: number }
 type Layer = 'richness' | 'rainfall'
 
 // Two views of the same geography. Flip between them and the wet tropics and the
 // palm-diversity hotspots light up in the same places — the correlation, shown.
 const LAYERS: Record<Layer, {
-  label: string; value: (r: RegionRichness) => number | null
-  ramp: string[]; unit: (v: number) => string; empty: string; fmt: (v: number) => string
+  label: string; value: (r: RegionRichness) => number | null; ramp: string[]; fmt: (v: number) => string
 }> = {
   richness: {
     label: 'Native palm species per region',
     value: (r) => r.richness,
     ramp: ['#1B2415', '#2E6B3E', '#7FB86A', '#E7C766'],
-    unit: (v) => `${v} native palm species`,
-    empty: 'no native palms',
     fmt: (v) => `${v}`,
   },
   rainfall: {
     label: 'Mean annual rainfall (mm)',
     value: (r) => r.rainfall,
     ramp: ['#20180F', '#6E5A2E', '#2E8A7E', '#6FC7E0'],
-    unit: (v) => `${v.toLocaleString()} mm rain / yr`,
-    empty: 'no rainfall data',
     fmt: (v) => v.toLocaleString(),
   },
 }
 
 /** World map of palm species richness by TDWG botanical country, with a rainfall
  *  overlay — the diversity reveal (Borneo, Colombia, New Guinea light up) and the
- *  wet-tropics correlation behind it. */
+ *  wet-tropics correlation behind it. The hover always reports both numbers, so the
+ *  correlation reads at a glance whichever layer colours the map. */
 export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void }) {
   const wrap = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -56,7 +52,7 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
 
     const draw = (rows: RegionRichness[], geo: { features: Feature[] }) => {
       if (cancelled || !wrap.current || !svgRef.current) return
-      const byCode = new Map(rows.map((r) => [r.code, cfg.value(r)]))
+      const byCode = new Map(rows.map((r) => [r.code, r]))
       const maxV = d3.max(rows, (r) => cfg.value(r) ?? 0) ?? 1
       setMax(maxV)
 
@@ -79,7 +75,8 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         .join('path')
         .attr('d', path as never)
         .attr('fill', (d) => {
-          const v = byCode.get(d.properties.LEVEL3_COD)
+          const row = byCode.get(d.properties.LEVEL3_COD)
+          const v = row ? cfg.value(row) : null
           return v != null && v > 0 ? color(v) : '#171C12'
         })
         .attr('stroke', '#0D110C')
@@ -88,7 +85,8 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         .on('mousemove', function (event, d) {
           const [x, y] = d3.pointer(event, wrap.current)
           d3.select(this).attr('stroke', '#D9B25A').attr('stroke-width', 1).raise()
-          setHover({ name: d.properties.LEVEL3_NAM, value: byCode.get(d.properties.LEVEL3_COD) ?? null, x, y })
+          const row = byCode.get(d.properties.LEVEL3_COD)
+          setHover({ name: d.properties.LEVEL3_NAM, richness: row?.richness ?? 0, rainfall: row?.rainfall ?? null, x, y })
         })
         .on('mouseleave', function () {
           d3.select(this).attr('stroke', '#0D110C').attr('stroke-width', 0.4)
@@ -133,18 +131,27 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         </div>
       </div>
 
-      {hover && (
-        <div style={{
-          position: 'absolute', left: hover.x + 14, top: hover.y + 12, pointerEvents: 'none',
-          background: 'var(--ground-raised)', border: '1px solid var(--hairline)',
-          borderRadius: 8, padding: '8px 11px', fontSize: 12.5, maxWidth: 220, zIndex: 5,
-        }}>
-          <div style={{ fontWeight: 700 }}>{hover.name}</div>
-          <div style={{ color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 3 }}>
-            {hover.value != null && hover.value > 0 ? cfg.unit(hover.value) : cfg.empty}
+      {hover && (() => {
+        // both numbers, active layer first — so the correlation reads in one glance
+        const rich = hover.richness > 0 ? `${hover.richness} native palm species` : 'no native palms'
+        const rain = hover.rainfall != null ? `${hover.rainfall.toLocaleString()} mm rain / yr` : null
+        const lines = (layer === 'rainfall' ? [rain, rich] : [rich, rain]).filter(Boolean) as string[]
+        return (
+          <div style={{
+            position: 'absolute', left: hover.x + 14, top: hover.y + 12, pointerEvents: 'none',
+            background: 'var(--ground-raised)', border: '1px solid var(--hairline)',
+            borderRadius: 8, padding: '8px 11px', fontSize: 12.5, maxWidth: 230, zIndex: 5,
+          }}>
+            <div style={{ fontWeight: 700 }}>{hover.name}</div>
+            {lines.map((t, i) => (
+              <div key={i} style={{
+                color: i === 0 ? 'var(--ink)' : 'var(--ink-faint)', fontFamily: 'var(--font-mono)',
+                fontSize: 11, marginTop: i === 0 ? 3 : 1,
+              }}>{t}</div>
+            ))}
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <div style={{
         position: 'absolute', left: 18, bottom: 16, fontSize: 11,
