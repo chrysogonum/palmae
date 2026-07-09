@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { RadialTree, type BranchStyle } from './RadialTree'
+import { RadialTree } from './RadialTree'
 import { CladeFocus } from './CladeFocus'
 import { LinkedMap } from './LinkedMap'
 import { RegionPanel } from './RegionPanel'
@@ -44,7 +44,6 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   regionRef.current = region
   const [treeHighlight, setTreeHighlight] = useState<Set<string> | null>(null)
   const [treeSource, setTreeSource] = useState<'species' | 'genera'>('species')
-  const [branchStyle, setBranchStyle] = useState<BranchStyle>('angled')
   const [genera, setGenera] = useState<{ genus: string; nSpecies: number }[]>([])
   const [locateGenus, setLocateGenus] = useState<{ genus: string; n: number } | null>(null)
 
@@ -168,34 +167,14 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
                   : <GenusSearchBox genera={genera} onPick={locateGenusByName} />}
               </div>
             </Head>
-            <RadialTree source={treeSource} branchStyle={branchStyle} onBrush={onBrush} onBrushRegions={onBrushRegions}
+            <RadialTree source={treeSource} onBrush={onBrush} onBrushRegions={onBrushRegions}
               onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
               locate={locate} locateGenus={locateGenus} highlightSlugs={treeHighlight} />
             <div style={{
-              position: 'absolute', left: 14, bottom: 12, zIndex: 3,
-              display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start',
+              position: 'absolute', left: 14, bottom: 12, zIndex: 3, maxWidth: 300,
+              background: 'rgba(13,17,12,.6)', borderRadius: 8, padding: '6px 10px', backdropFilter: 'blur(2px)',
             }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'rgba(13,17,12,.6)', borderRadius: 8, padding: '5px 9px', backdropFilter: 'blur(2px)',
-              }}>
-                <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '.14em',
-                  textTransform: 'uppercase', color: 'var(--ink-faint)',
-                }}>Branches</span>
-                <div className="seg" style={{ fontSize: 10.5 }}>
-                  {(['angled', 'straight', 'curved'] as BranchStyle[]).map((s) => (
-                    <button key={s} className={branchStyle === s ? 'active' : ''}
-                      onClick={() => setBranchStyle(s)} style={{ textTransform: 'capitalize' }}>{s}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{
-                maxWidth: 300, background: 'rgba(13,17,12,.6)', borderRadius: 8,
-                padding: '6px 10px', backdropFilter: 'blur(2px)',
-              }}>
-                <SubfamilyRiskLegend subs={SUBFAMILIES_ALL} showRisk={false} />
-              </div>
+              <SubfamilyRiskLegend subs={SUBFAMILIES_ALL} showRisk={false} />
             </div>
           </>
         )}
