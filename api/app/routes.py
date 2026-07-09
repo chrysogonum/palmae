@@ -40,6 +40,21 @@ def _load_tdwg_names() -> dict[str, str]:
 _TDWG_NAMES = _load_tdwg_names()
 
 
+def _load_region_rainfall() -> dict[str, int]:
+    """TDWG level-3 code → mean annual rainfall (mm), precomputed by etl.region_rainfall
+    (WorldClim bio_12 zonal means). The 'wet tropics' layer for the atlas."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[2] / "data" / "region_rainfall.json"
+    try:
+        return json.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+_REGION_RAINFALL = _load_region_rainfall()
+
+
 # --------------------------------------------------------------------------- #
 # meta: sources, search
 # --------------------------------------------------------------------------- #
@@ -182,9 +197,13 @@ def ranges(species: str | None = None, db: Session = Depends(get_session)):
         return [{"code": c, "origin": o} for c, o in rows]
     rows = db.execute(text("""
         select tdwg_code, count(*) filter (where origin='native') as richness
-        from range_region group by tdwg_code order by richness desc
+        from range_region group by tdwg_code
     """)).all()
-    return [{"code": c, "richness": n} for c, n in rows]
+    richness = {c: n for c, n in rows}
+    # union with all rainfall-covered regions, so palm-less dry regions (Sahara,
+    # Arabia…) still render on the rainfall layer — that contrast is the point
+    codes = set(richness) | set(_REGION_RAINFALL)
+    return [{"code": c, "richness": richness.get(c, 0), "rainfall": _REGION_RAINFALL.get(c)} for c in sorted(codes)]
 
 
 @router.get("/species-regions")

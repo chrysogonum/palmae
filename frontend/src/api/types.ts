@@ -12,7 +12,7 @@ export interface SearchResult {
   slug: Slug; latin: string; common: string | null; color: string; sub: string | null
 }
 
-export interface RegionRichness { code: string; richness: number }
+export interface RegionRichness { code: string; richness: number; rainfall: number | null }
 export interface RegionSpecies {
   slug: Slug; latin: string; subfamily: string | null
   risk: string; color: string; riskColor: string
