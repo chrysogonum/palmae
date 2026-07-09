@@ -3,13 +3,14 @@
 *Date: 2026-07-08 · Purpose: surface what expert palm botanists, systematists, ecologists,
 and conservation biologists would find wanting, before sharing with Scott Zona and colleagues.*
 
-> **Status — 2026-07-08.** The "fix before sharing" honesty items are done and deployed: the card no
-> longer implies a live IUCN pull (assessed species read "(assessed)", sourced via Bellot 2022); the
-> Sources entries for IUCN, WorldClim (now states 10-arc-min), GBIF (no false Download-DOI claim), and
-> Faurby (no false "shown as uncertain" claim) are corrected; the stale oak IUCN test is rewritten.
-> **#5 (range origin) is staged in code (`etl/run.py`) but inert until an ETL re-run** — the collapsed
-> origins are already baked into the live data. Larger follow-ups (real IUCN loading, occurrence
-> cleaning #6, phylogram #8, synonyms #11, export #19) remain open.
+> **Status — 2026-07-09.** Honesty items done and deployed. **#1 IUCN is now a REAL integration**:
+> `iucn.py` rewritten for Arecaceae, pulling the Red List API v4 — 1,266 palms carry genuine categories
+> (CR/EN/VU/NT/LC/DD) + assessment year, shown on the card; the rest keep the labelled Bellot prediction.
+> **#5 (range origin) done** — re-derived against the DB (8 doubtful/extinct records removed). WorldClim,
+> GBIF, Faurby source notes corrected; stale oak IUCN test rewritten. Dead oak modules deleted
+> (`curated.py`, `leaf_habit.py`, `sections.py`, `tdwg.py`); `load_sources` now upserts.
+> **Still open:** GBIF Download DOI (creds now in place), occurrence cleaning #6, phylogram #8,
+> synonyms #11, export #19, faceted filter #20, deep links #21.
 
 This is a self-critique, grounded in an audit of the actual pipeline (ETL → API → UI), not a
 description of intentions. Findings are grouped by urgency. The most important are not the tree's

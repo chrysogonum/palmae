@@ -174,8 +174,17 @@ export function Detail({ slug, onSeeOnTree }: {
       </div>
 
       <div style={{ display: 'flex', gap: 10, margin: '18px 0', flexWrap: 'wrap' }}>
-        <Badge color={c.riskColor}>{c.riskLabel}{c.basis === 'predicted' ? ' (predicted)' : c.basis === 'assessed' ? ' (assessed)' : ''}</Badge>
-        {c.probability != null && <Badge muted>p = {c.probability}</Badge>}
+        {c.basis === 'assessed' ? (
+          <>
+            <Badge color={c.iucnColor ?? c.riskColor}>{c.iucnLabel ?? c.riskLabel}</Badge>
+            <Badge muted>IUCN{c.assessmentYear ? ` · ${c.assessmentYear}` : ''}</Badge>
+          </>
+        ) : (
+          <>
+            <Badge color={c.riskColor}>{c.riskLabel}{c.basis === 'predicted' ? ' (predicted)' : ''}</Badge>
+            {c.probability != null && <Badge muted>p = {c.probability}</Badge>}
+          </>
+        )}
         {d.onTree && (onSeeOnTree
           ? (
             <button onClick={() => onSeeOnTree(d.slug)} title="Trace this species on the phylogeny"
@@ -255,7 +264,7 @@ export function Detail({ slug, onSeeOnTree }: {
 
       {c.source && (
         <div style={{ marginTop: 22, fontSize: 11.5, color: 'var(--ink-faint)' }}>
-          Risk: {c.basis === 'assessed' ? 'IUCN Red List assessment, via ' : 'model prediction · '}{c.source}
+          Risk: {c.basis === 'assessed' ? 'Formal IUCN Red List assessment' : `Model prediction · ${c.source}`}
         </div>
       )}
     </div>

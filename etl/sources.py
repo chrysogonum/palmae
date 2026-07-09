@@ -160,17 +160,17 @@ DATA_SOURCES = [
      "doi": "10.1038/s41559-022-01858-0",
      "url": "https://doi.org/10.1038/s41559-022-01858-0"},
     {"id": "iucn", "name": "IUCN Red List of Threatened Species (Arecaceae)",
-     "role": "origin of the assessed-species labels (via Bellot 2022)", "license": "credited to IUCN / Palm Specialist Group",
-     "note": "About a fifth of palms carry a formal Red List assessment. Those assessments "
-             "reach the atlas through Bellot et al. 2022, which used them as ground truth — "
-             "the atlas does NOT query the Red List API and does NOT display Red List "
-             "categories (CR/EN/VU) or assessment years. Assessments are contributed by the "
-             "IUCN SSC Palm Specialist Group. (Directly integrating the Red List is a planned "
-             "improvement.)",
+     "role": "formal conservation status (assessed subset)", "license": "non-commercial · display-only (IUCN terms)",
+     "note": "Formal Red List category, criteria and assessment year for the ~1,300 palms "
+             "with a latest assessment — pulled from the Red List API v4 (family Arecaceae, "
+             "keeping the latest Global-scope assessment per species) and shown with the real "
+             "category (CR/EN/VU/NT/LC/DD) and year. Displayed with attribution, not rehosted. "
+             "Species IUCN has not assessed fall back to the Bellot 2022 prediction. "
+             "Assessments contributed by the IUCN SSC Palm Specialist Group.",
      "authors": "IUCN; IUCN SSC Palm Specialist Group",
      "year": None,
      "title": "The IUCN Red List of Threatened Species",
-     "venue": "IUCN Red List",
+     "venue": "IUCN Red List API v4",
      "doi": None,
      "url": "https://www.iucnredlist.org/"},
     {"id": "bgci", "name": "BGCI GlobalTreeSearch & PlantSearch",

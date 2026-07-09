@@ -382,7 +382,8 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
     row = db.execute(text("""
         select t.species_id, t.slug, t.scientific_name, t.authorship, t.common_name,
                t.genus, t.tribe, t.subfamily, t.is_hybrid,
-               c.predicted_category, c.risk_basis, c.prediction_probability, c.iucn_category
+               c.predicted_category, c.risk_basis, c.prediction_probability,
+               c.iucn_category, c.assessment_year
         from taxon t
         left join conservation_assessment c on c.species_id = t.species_id
         where t.slug = :slug
@@ -390,7 +391,7 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
     if not row:
         raise HTTPException(404, f"unknown species '{slug}'")
     (sid, slug, sci, auth, common, genus, tribe, subfamily, is_hybrid,
-     risk, basis, prob, iucn) = row
+     risk, basis, prob, iucn, iucn_year) = row
     tr = _traits(db, sid)
 
     def cat(name):
@@ -439,7 +440,9 @@ def taxon_detail(slug: str, db: Session = Depends(get_session)):
         "basis": basis,
         "probability": round(prob, 2) if prob is not None else None,
         "iucn": iucn, "iucnLabel": palette.IUCN_LABEL.get(iucn),
-        "source": "Bellot et al. 2022" if basis else None,
+        "iucnColor": palette.IUCN_COLOR.get(iucn) if iucn else None,
+        "assessmentYear": iucn_year,
+        "source": ("IUCN Red List" if basis == "assessed" else "Bellot et al. 2022") if basis else None,
     }
 
     # Derived climate envelope (coldest-month edge) — the palm-line / grower layer.

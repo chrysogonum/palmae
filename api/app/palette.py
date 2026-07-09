@@ -30,12 +30,16 @@ RISK_LABEL = {
 # Formal IUCN categories (shown only for assessed species, as an overlay).
 IUCN_COLOR = {
     "LC": "#6FBF73", "NT": "#B5C34A", "VU": "#E0A63C",
-    "EN": "#E07B3C", "CR": "#C1403C", "DD": "#9AA0A6", "EX": "#4A4A4A",
+    "EN": "#E07B3C", "CR": "#C1403C", "DD": "#9AA0A6",
+    "EW": "#4A4A4A", "EX": "#4A4A4A",
+    "LR/nt": "#B5C34A", "LR/lc": "#6FBF73", "LR/cd": "#B5C34A",
 }
 IUCN_LABEL = {
     "LC": "Least Concern", "NT": "Near Threatened", "VU": "Vulnerable",
     "EN": "Endangered", "CR": "Critically Endangered", "DD": "Data Deficient",
-    "EX": "Extinct",
+    "EW": "Extinct in the Wild", "EX": "Extinct",
+    "LR/nt": "Lower Risk (near threatened)", "LR/lc": "Lower Risk (least concern)",
+    "LR/cd": "Lower Risk (conservation dependent)",
 }
 
 _NEUTRAL = "#8A8E79"

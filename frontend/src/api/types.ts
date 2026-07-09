@@ -38,7 +38,8 @@ export interface Coverage {
 export interface GlanceRow { k: string; v: string | null }
 export interface Conservation {
   risk: string; riskLabel: string | null; riskColor: string; basis: string | null
-  probability: number | null; iucn: string | null; iucnLabel: string | null; source: string | null
+  probability: number | null; iucn: string | null; iucnLabel: string | null
+  iucnColor: string | null; assessmentYear: number | null; source: string | null
 }
 export interface ClimateProfile {
   cmmtMean: number; cmmtMin: number; n: number

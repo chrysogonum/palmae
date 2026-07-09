@@ -249,6 +249,55 @@ def load_conservation(session) -> None:
           f"{threat} threatened ({pct}% of covered)")
 
 
+def load_iucn(session) -> None:
+    """Overlay the real IUCN Red List (API v4) onto the Bellot layer: for species with
+    a formal assessment, set the true category / year / criteria and flip risk_basis to
+    'assessed' (the real assessment supersedes the prediction). Species IUCN has assessed
+    but Bellot did not cover get a fresh assessed row. Idempotent (update-or-insert)."""
+    from etl import iucn
+    if not iucn.available():
+        print("  iucn: no IUCN_API_TOKEN — skipped (risk stays Bellot-only)")
+        return
+    assessments = iucn.fetch_family_assessments("Arecaceae")
+    by_name = {sn.lower(): sid for sid, sn in session.execute(
+        select(m.Taxon.species_id, m.Taxon.scientific_name).where(m.Taxon.accepted == True))}  # noqa: E712
+    alias = {rn.lower(): sid for sid, rn in session.execute(
+        select(m.NameAlias.species_id, m.NameAlias.raw_name))}
+    existing = {r.species_id: r for r in session.execute(
+        select(m.ConservationAssessment)).scalars()}
+
+    matched = updated = inserted = 0
+    seen: set[int] = set()
+    for name, a in assessments.items():
+        sid = by_name.get(name.lower()) or alias.get(name.lower())
+        if sid is None or sid in seen:
+            continue
+        seen.add(sid)
+        matched += 1
+        cat = a["category"]
+        binary = iucn.binary_category(cat)
+        row = existing.get(sid)
+        if row is not None:
+            row.risk_basis = "assessed"
+            row.iucn_category = cat
+            row.assessment_year = a["year"]
+            row.criteria = a.get("criteria")
+            row.predicted_category = binary
+            row.prediction_probability = None  # a real assessment, not a prediction
+            row.source = "IUCN Red List (API v4)"
+            updated += 1
+        else:
+            session.add(m.ConservationAssessment(
+                species_id=sid, risk_basis="assessed", iucn_category=cat,
+                assessment_year=a["year"], criteria=a.get("criteria"),
+                predicted_category=binary, scope="global",
+                source="IUCN Red List (API v4)"))
+            inserted += 1
+    session.flush()
+    print(f"  iucn: {len(assessments)} assessments fetched, {matched} matched to taxa "
+          f"({updated} enriched, {inserted} new); unmatched {len(assessments) - matched}")
+
+
 def load_tree(session) -> None:
     """Faurby 2016 complete supertree -> tree + phylogeny_node. Tips reconciled to
     accepted taxa through the NameAlias spine; inserted in preorder so each node's
@@ -302,6 +351,7 @@ def main() -> None:
         load_traits(session)
         load_ranges(session)
         load_conservation(session)
+        load_iucn(session)
         load_tree(session)
         session.commit()
         print("done.")

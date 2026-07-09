@@ -13,7 +13,7 @@ import time
 import requests
 
 INAT = "https://api.inaturalist.org/v1"
-_HEADERS = {"User-Agent": "Quercus-Atlas/0.1 (educational, non-commercial)"}
+_HEADERS = {"User-Agent": "Palmae-Atlas/1.0 (educational, non-commercial)"}
 # Creative Commons license codes we may display (non-commercial project).
 _CC_OK = {"cc0", "cc-by", "cc-by-nc", "cc-by-sa", "cc-by-nc-sa", "cc-by-nd", "cc-by-nc-nd"}
 _TAG = re.compile(r"<[^>]+>")
