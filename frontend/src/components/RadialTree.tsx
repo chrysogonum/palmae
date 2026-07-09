@@ -61,7 +61,12 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
   const store = useRef<{ root: HNode; links: LinkSel; hit: LinkSel; tips: TipSel; reset: () => void } | null>(null)
   const styleRef = useRef(branchStyle)
   styleRef.current = branchStyle
-  const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null)
+  const [tip, setTip] = useState<{
+    x: number; y: number
+    label?: string                              // simple one-liner (single tip hover)
+    title?: string; titleColor?: string         // clade card: subfamily
+    head?: string; genera?: string; threatened?: number; note?: string
+  } | null>(null)
   const [ready, setReady] = useState(false)
   // What the tree should fall back to on mouse-out: a selected region's species
   // (highlightSlugs) or a located species path. Kept in a ref so reset() restores
@@ -79,7 +84,11 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
       if (cancelled || !wrap.current || !svgRef.current) return
       const W = wrap.current.clientWidth
       const H = wrap.current.clientHeight
-      const R = Math.min(W, H) / 2 - 16
+      // reserve headroom at the top so the crown of the tree clears the floating
+      // title + All-species/Genera toggle + search that overlay the panel
+      const TOP = 52
+      const R = Math.min(W, H - TOP) / 2 - 16
+      const CY = TOP + (H - TOP) / 2
 
       const root = d3.hierarchy<TreeNode>(data) as HNode
       d3.cluster<TreeNode>().size([2 * Math.PI, R])(root)
@@ -90,7 +99,7 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
 
       const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
-      const g = svg.append('g').attr('transform', `translate(${W / 2},${H / 2})`)
+      const g = svg.append('g').attr('transform', `translate(${W / 2},${CY})`)
       const linkGen = branchPath(styleRef.current)
 
       const links: LinkSel = g.selectAll<SVGPathElement, d3.HierarchyLink<TreeNode>>('path.lk')
@@ -151,6 +160,10 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
         highlightClade(clade)
         const leaves = clade.leaves() as HNode[]
         const [x, y] = d3.pointer(e, wrap.current)
+        const top5 = (names: string[]) =>
+          names.slice(0, 5).join(', ') + (names.length > 5 ? ` +${names.length - 5}` : '')
+        const cladeCard = { x, y, title: clade._sub || 'mixed clade',
+          titleColor: clade._sub ? subColor(clade._sub) : undefined } as const
         if (isGenus) {
           // pop the clickable genus tips of this clade so it's clear where to click
           const leafSet = new Set(leaves)
@@ -159,12 +172,22 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
           leaves.forEach((l) => (l.data.regions ?? []).forEach((c) => codes.add(c)))
           onBrushRegions?.([...codes])
           const sup = clade.data.support
-          const nG = leaves.length === 1 ? '1 genus' : `${leaves.length} genera`
-          setTip({ label: `${nG}${clade._sub ? ' · ' + clade._sub : ''}`
-            + (sup != null ? ` · ${sup}% bootstrap` : '') + ' — click to zoom in', x, y })
+          const totalSp = leaves.reduce((s, l) => s + (l.data.nSpecies ?? 0), 0)
+          // genera ordered by species richness — the recognisable names first
+          const genera = [...leaves].sort((a, b) => (b.data.nSpecies ?? 0) - (a.data.nSpecies ?? 0))
+            .map((l) => l.data.genus).filter(Boolean) as string[]
+          setTip({ ...cladeCard,
+            head: `${leaves.length} genera · ${totalSp} species` + (sup != null ? ` · ${sup}% bootstrap` : ''),
+            genera: top5(genera), note: 'click to zoom in' })
         } else {
           onBrush(leaves.map((l) => l.data.sp).filter(Boolean) as string[])
-          setTip({ label: `${leaves.length} species${clade._sub ? ' · ' + clade._sub : ''} — click to open`, x, y })
+          const count = new Map<string, number>()
+          leaves.forEach((l) => { const g = l.data.genus; if (g) count.set(g, (count.get(g) ?? 0) + 1) })
+          const genera = [...count.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0])
+          const threatened = leaves.filter((l) => l.data.risk === 'threatened').length
+          setTip({ ...cladeCard,
+            head: `${leaves.length} species · ${genera.length} ${genera.length === 1 ? 'genus' : 'genera'}`,
+            genera: top5(genera), threatened, note: 'click to open' })
         }
       }
       hit.on('mouseover', onBranch).on('mousemove', onBranch)
@@ -269,14 +292,29 @@ export function RadialTree({ source = 'species', branchStyle = 'angled', onBrush
       <svg ref={svgRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       {tip && (() => {
         const cw = wrap.current?.clientWidth ?? 0
-        const flipX = tip.x > cw - 230
+        const flipX = tip.x > cw - 260
+        const box: React.CSSProperties = {
+          position: 'absolute', left: tip.x + (flipX ? -14 : 14), top: tip.y + 14,
+          transform: flipX ? 'translateX(-100%)' : 'none', pointerEvents: 'none',
+          background: 'var(--ground-raised)', border: '1px solid var(--hairline)', borderRadius: 8,
+          padding: '7px 11px', zIndex: 5, fontFamily: 'var(--font-body)', maxWidth: 268,
+        }
+        if (tip.title) return (
+          <div style={box}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: tip.titleColor ?? 'var(--ink)' }}>{tip.title}</div>
+            {tip.head && <div style={{ fontSize: 11.5, color: 'var(--ink-muted)', marginTop: 1 }}>{tip.head}</div>}
+            {tip.genera && <div style={{ fontSize: 11.5, fontStyle: 'italic', color: 'var(--ink)', marginTop: 4, lineHeight: 1.35 }}>{tip.genera}</div>}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 5 }}>
+              {tip.threatened != null && tip.threatened > 0 && (
+                <span style={{ fontSize: 11, color: '#D46B63', fontWeight: 600 }}>{tip.threatened} threatened</span>
+              )}
+              {tip.note && <span style={{ fontSize: 10, letterSpacing: '.04em', color: 'var(--ink-faint)', fontFamily: 'var(--font-mono)' }}>{tip.note}</span>}
+            </div>
+          </div>
+        )
         return (
-          <div style={{
-            position: 'absolute', left: tip.x + (flipX ? -14 : 14), top: tip.y + 14,
-            transform: flipX ? 'translateX(-100%)' : 'none', pointerEvents: 'none',
-            background: 'var(--ground-raised)', border: '1px solid var(--hairline)', borderRadius: 7,
-            padding: '5px 9px', fontSize: 12, maxWidth: 260, zIndex: 5, fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-            fontStyle: /^[A-Z][a-z]+ [a-z]/.test(tip.label) ? 'italic' : 'normal',
+          <div style={{ ...box, fontSize: 12, whiteSpace: 'nowrap',
+            fontStyle: /^[A-Z][a-z]+ [a-z]/.test(tip.label ?? '') ? 'italic' : 'normal',
           }}>{tip.label}</div>
         )
       })()}
