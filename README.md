@@ -24,9 +24,9 @@ approximation is labelled as one.
   where they hold on past it, each with its data-derived cold edge.
 - **World Atlas** — a species-richness choropleth (Borneo, Colombia, New Guinea, Madagascar light up);
   click a region for its native palms.
-- **Field Guide** — a catalogue of all 2,591 species with placement, morphology, native range, an honest
-  predicted-vs-assessed conservation status, and a derived coldest-month-climate block; filter by
-  subfamily; every card links back onto the phylogeny.
+- **Field Guide** — a catalogue of all 2,591 species with placement, morphology, native range, conservation
+  status (the real IUCN Red List category where assessed, a labelled Bellot 2022 prediction otherwise), and
+  a derived coldest-month-climate block; filter by subfamily; every card links back onto the phylogeny.
 - **About / Sources** — the pipeline and honest caveats in plain language, and a full bibliography with
   DOIs and licences for every dataset.
 
@@ -36,16 +36,18 @@ approximation is labelled as one.
 |---|---|---|
 | Taxonomy (accepted names + synonymy) | WCVP / POWO (Kew) | 2,591 species · 6,754 aliases |
 | Functional traits | PalmTraits 1.0 | 39,811 rows · 2,256 species |
-| Native/introduced ranges (TDWG level-3) | WCVP / POWO | 6,031 records · 2,573 species |
-| Extinction risk (predicted + assessed) | Bellot et al. 2022 | 1,730 species (438 IUCN + 1,292 ML) |
+| Native/introduced ranges (TDWG level-3) | WCVP / POWO | 6,023 records · 2,572 species |
+| Conservation status (assessed + predicted) | IUCN Red List v4 + Bellot et al. 2022 | 2,021 species (1,266 real IUCN categories; Bellot ML for the rest) |
 | Phylogeny (all species) | Faurby et al. 2016 supertree | 2,539 tips · 2,235 species (86%) |
 | Phylogeny (genus backbone, with support) | Yao et al. 2023 (plastid) | 177 genera |
 | Occurrences × climate (the palm line) | GBIF × WorldClim 2.1 | 37,289 points (30,943 native) · 1,161 profiles |
 
-Conservation risk is a **model prediction** wherever no formal IUCN assessment exists, and is always named
-as the Bellot et al. 2022 prediction. The climate layer is **derived** (occurrence × WorldClim), never a
-measured cold tolerance. Known gaps (14% of species off the tree, no node support on Faurby, no leaf
-architecture in PalmTraits, binary-only IUCN category) are stated plainly on the About page.
+Conservation status is the **real IUCN Red List category** (CR/EN/VU/NT/LC/DD, with assessment year, via
+the Red List API v4) for the ~1,300 assessed palms, and the **Bellot et al. 2022 model prediction** —
+always labelled "(predicted)" — for the rest. The climate layer is **derived** (occurrence × WorldClim),
+never a measured cold tolerance. Known gaps (14% of species off the tree, no node support on the Faurby
+supertree, the tree drawn as a cladogram rather than a time-scaled phylogram, no leaf architecture in
+PalmTraits) are stated plainly on the About page.
 
 ## Architecture
 
@@ -78,13 +80,15 @@ npm install --prefix frontend                                         # frontend
 # paste your Supabase session-pooler URL into api/.env as DATABASE_URL (never committed)
 
 cd api && ../.venv/bin/alembic upgrade head && cd ..   # create tables
-PYTHONPATH=api .venv/bin/python -m etl.run             # spine: names, traits, ranges, risk, tree (~2–4 min)
+PYTHONPATH=api .venv/bin/python -m etl.run             # spine: names, traits, ranges, risk (Bellot + IUCN v4), tree (~2–4 min)
 PYTHONPATH=api .venv/bin/python -m etl.occurrences     # the palm line: GBIF × WorldClim (~10–14 min)
 PYTHONPATH=api .venv/bin/python -m etl.occurrences --renegades   # deterministic hardy-palm backfill
 PYTHONPATH=api .venv/bin/python -m etl.yao             # Yao 2023 genus tree (needs data/yao2023/)
 ```
 
-The palm-line ingest needs the WorldClim monthly `tavg` rasters in `data/worldclim/`, and the genus tree
+The real IUCN category layer needs an `IUCN_API_TOKEN` in `api/.env` (Red List API v4); without it the
+spine still runs and risk falls back to the Bellot prediction alone. The palm-line ingest needs the
+WorldClim monthly `tavg` rasters in `data/worldclim/`, and the genus tree
 needs the Yao tree file in `data/yao2023/` (both large and gitignored — see `PROJECT_STATE.md` for the
 exact download URLs).
 
@@ -116,8 +120,8 @@ Open biodiversity data; each source keeps its own licence and is attributed in f
 **Faurby et al. 2016** (all-species tree, CC0) and **Yao et al. 2023** (genus backbone, CC-BY), **GBIF**
 (occurrences, CC0/CC-BY), **WorldClim 2.1** (climate, CC-BY) with the **Reichgelt et al. 2018** frost-line
 calibration, **Bellot et al. 2022** (predicted extinction risk, CC-BY, from the authors' own release),
-the **IUCN Red List** (assessed status, non-commercial, display-only), and **Genera Palmarum** (the
-subfamily/tribe/genus classification).
+the **IUCN Red List API v4** (real category + assessment year for assessed species, non-commercial,
+display-only), and **Genera Palmarum** (the subfamily/tribe/genus classification).
 
 ## License
 
