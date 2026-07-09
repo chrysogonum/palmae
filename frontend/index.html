@@ -4,10 +4,71 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta name="theme-color" content="#0D110C" />
+
+    <title>Palmae — a living atlas of the palms</title>
+    <meta name="description" content="An interactive atlas of the whole palm family (Arecaceae) — 2,591 species mapped by native range, phylogeny, conservation risk, and climate. Every figure traces to a published dataset." />
+    <link rel="canonical" href="https://palmae.pages.dev/" />
+
+    <!-- Open Graph (link unfurls: Bluesky, Slack, Facebook, iMessage) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Palmae" />
+    <meta property="og:title" content="Palmae — a living atlas of the palms" />
+    <meta property="og:description" content="The whole palm family, mapped: 2,591 species by native range, phylogeny, conservation risk, and climate — every figure traced to a published dataset." />
+    <meta property="og:url" content="https://palmae.pages.dev/" />
+    <meta property="og:image" content="https://palmae.pages.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Palmae — a living atlas of the palms" />
+
+    <!-- Twitter / X card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Palmae — a living atlas of the palms" />
+    <meta name="twitter:description" content="The whole palm family, mapped: 2,591 species by native range, phylogeny, conservation risk, and climate — every figure cited." />
+    <meta name="twitter:image" content="https://palmae.pages.dev/og-image.png" />
+
+    <script type="module" src="/src/main.tsx"></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <!--
+      Meaningful content for crawlers and no-JS clients. React replaces #root on
+      hydration; this fallback is what a JavaScript-less agent (or a slow first
+      paint) sees — real headings, description, sections, and data provenance.
+    -->
+    <div id="root">
+      <main style="max-width:760px;margin:0 auto;padding:56px 28px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#EDF0E2;background:#0D110C;line-height:1.6">
+        <p style="font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#D9B25A;margin:0 0 8px">A living atlas of the palms</p>
+        <h1 style="font-size:40px;margin:0 0 14px;line-height:1.05">Palmae</h1>
+        <p style="font-size:18px;color:#98A187;margin:0 0 8px">
+          An interactive atlas of the entire palm family — <strong>Arecaceae</strong>, traditionally
+          <strong>Palmae</strong> — covering <strong>2,591 accepted species</strong>: where they grow, how they
+          are related, which are at risk, and the climate they live in.
+        </p>
+        <p style="font-size:15px;color:#6E7360;margin:0 0 28px">
+          2,591 species · 86% placed on the phylogeny · 1,238 threatened. Nothing here is illustrative filler:
+          every point, branch, and status traces to a published dataset, and every approximation is labelled.
+        </p>
+
+        <h2 style="font-size:20px;margin:0 0 10px;color:#EDF0E2">What's inside</h2>
+        <ul style="padding-left:18px;margin:0 0 28px;color:#98A187;font-size:15px">
+          <li><strong>Workbench</strong> — a linked phylogeny and world map: click a clade to see where it lives, or a region to light up its species.</li>
+          <li><strong>World Atlas</strong> — native palm richness across the TDWG regions of the world.</li>
+          <li><strong>Palm Line</strong> — every native occurrence coloured by the coldest-month temperature where it grows, tracing the frost line palms have marked for 50 million years.</li>
+          <li><strong>Field Guide</strong> — a searchable card for each species: range, traits, conservation status, climate, and a photograph.</li>
+        </ul>
+
+        <h2 style="font-size:20px;margin:0 0 10px;color:#EDF0E2">Data</h2>
+        <p style="font-size:15px;color:#98A187;margin:0 0 28px">
+          Built on WCVP names, PalmTraits 1.0, TDWG WGSRPD level-3 ranges, the Faurby&nbsp;2016 species phylogeny
+          and Yao&nbsp;2023 genus phylogeny, GBIF occurrences × WorldClim climate, the Bellot&nbsp;et&nbsp;al.&nbsp;2022
+          extinction-risk model, and the IUCN Red List. Each is credited in full, with its DOI, on the sources page.
+        </p>
+
+        <p style="font-size:14px;color:#6E7360;margin:0">
+          This is an interactive application; enable JavaScript for the full linked tree-and-map workbench.
+          Built by Peter&nbsp;Repetti.
+        </p>
+      </main>
+    </div>
   </body>
 </html>
