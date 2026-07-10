@@ -11,8 +11,25 @@ interface Feature {
   geometry: GeoJSON.Geometry
 }
 interface Hover { name: string; row: RegionRichness; x: number; y: number }
-type Layer = 'richness' | 'rainfall' | 'anomaly'
+type Layer = 'richness' | 'rainfall' | 'anomaly' | 'roles'
 type View = 'map' | 'scatter'
+type Role = 'radiator' | 'incubator' | 'corridor' | 'accumulator'
+
+// Our TDWG-level-3 mapping of the biogeographic roles from Kühnhäuser et al. 2025 —
+// how each tropical-Asian region contributes to overall palm diversity. Approximate:
+// a few TDWG botanical countries straddle two of the paper's bioregions.
+const REGION_ROLE: Record<string, Role> = {
+  BOR: 'radiator',
+  MYA: 'incubator', THA: 'incubator', LAO: 'incubator', CBD: 'incubator', VIE: 'incubator', NWG: 'incubator', SUL: 'incubator',
+  SUM: 'corridor', JAW: 'corridor', MLY: 'corridor', MOL: 'corridor',
+  QLD: 'accumulator', NTA: 'accumulator', IND: 'accumulator', PHI: 'accumulator',
+}
+const ROLE_INFO: Record<Role, { color: string; label: string; desc: string }> = {
+  radiator: { color: '#E0873C', label: 'Radiator', desc: 'generates & exports diversity' },
+  incubator: { color: '#5FB07A', label: 'Incubator', desc: 'breeds diversity in isolation' },
+  corridor: { color: '#6FA8D0', label: 'Corridor', desc: 'connects neighbouring regions' },
+  accumulator: { color: '#B080C0', label: 'Accumulator', desc: 'acquires diversity from elsewhere' },
+}
 
 const RICH_RAMP = ['#1B2415', '#2E6B3E', '#7FB86A', '#E7C766']
 const RAIN_RAMP = ['#20180F', '#6E5A2E', '#2E8A7E', '#6FC7E0']
@@ -56,7 +73,9 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
       const path = d3.geoPath(projection)
 
       let fill: (r: RegionRichness) => string
-      if (layer === 'anomaly') {
+      if (layer === 'roles') {
+        fill = (r) => { const role = REGION_ROLE[r.code]; return role ? ROLE_INFO[role].color : '#171C12' }
+      } else if (layer === 'anomaly') {
         fill = (r) => (r.anomaly == null ? '#171C12' : anomColor(r.anomaly))
       } else {
         const cfg = MAP_LAYERS[layer]
@@ -183,13 +202,16 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
             <button className={layer === 'richness' ? 'active' : ''} onClick={() => setLayer('richness')}>Palm richness</button>
             <button className={layer === 'rainfall' ? 'active' : ''} onClick={() => setLayer('rainfall')}>Rainfall</button>
             <button className={layer === 'anomaly' ? 'active' : ''} onClick={() => setLayer('anomaly')}>Anomaly</button>
+            <button className={layer === 'roles' ? 'active' : ''} onClick={() => setLayer('roles')}>Roles</button>
           </div>
         )}
       </div>
 
       {hover && (() => {
         const r = hover.row
+        const role = REGION_ROLE[r.code]
         const lines: string[] = []
+        if (view === 'map' && layer === 'roles' && role) lines.push(`${ROLE_INFO[role].label} — ${ROLE_INFO[role].desc}`)
         lines.push(r.richness > 0 ? `${r.richness} native palm species` : 'no native palms')
         if (r.rainfall != null) lines.push(`${r.rainfall.toLocaleString()} mm rain / yr`)
         if (r.cmmt != null) lines.push(`coldest month ${r.cmmt}°C`)
@@ -228,6 +250,25 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
             <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 300, lineHeight: 1.4 }}>
               One dot = one region. Dashed line = typical richness vs rainfall among frost-free, sizeable
               regions; dim dots (cold or tiny islands) are outside that comparison. Labels flag the outliers.
+            </div>
+          </>
+        ) : layer === 'roles' ? (
+          <>
+            <div style={{ letterSpacing: '.14em', textTransform: 'uppercase', fontSize: 9, marginBottom: 6, color: 'var(--ink-faint)' }}>
+              How Asian regions build palm diversity
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {(['radiator', 'incubator', 'corridor', 'accumulator'] as Role[]).map((k) => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <span style={{ width: 11, height: 11, borderRadius: 3, background: ROLE_INFO[k].color, flex: '0 0 auto' }} />
+                  <span style={{ color: 'var(--ink)', fontSize: 11 }}>{ROLE_INFO[k].label}</span>
+                  <span style={{ color: 'var(--ink-faint)', fontSize: 10.5 }}>· {ROLE_INFO[k].desc}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 320, lineHeight: 1.4 }}>
+              Region size &amp; isolation, not climate, drive Asian palm diversity — Kühnhäuser et al. 2025.
+              Our approximate mapping of their bioregions onto TDWG botanical countries.
             </div>
           </>
         ) : layer === 'anomaly' ? (
