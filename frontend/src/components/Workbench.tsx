@@ -15,9 +15,12 @@ function Head({ title, meta, children }: { title: string; meta?: string; childre
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10,
       background: 'linear-gradient(180deg, var(--ground) 55%, transparent)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>{title}</h2>
-        {meta && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '.06em' }}>{meta}</span>}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0, flexShrink: 1 }}>
+        <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{title}</h2>
+        {meta && <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-faint)', letterSpacing: '.06em',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
+        }}>{meta}</span>}
       </div>
       {children}
     </div>
@@ -155,22 +158,16 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
             <Head
               title={treeSource === 'genera' ? 'Palm genera' : 'Palm tree of life'}
               meta={treeSource === 'genera'
-                ? 'Yao 2023 · 177 genera · bootstrap support · cladogram'
+                ? 'Yao 2023 · 177 genera'
                 : timeScaled
-                  ? 'Faurby 2016 · dated supertree · radius = Ma before present · ages approximate'
-                  : 'Faurby 2016 · 2,539 tips · cladogram (relationships, not branch lengths)'}
+                  ? 'Faurby 2016 · chronogram · ages approximate'
+                  : 'Faurby 2016 · 2,539 tips'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
                 <div className="seg" style={{ fontSize: 11 }}>
                   <button className={treeSource === 'species' ? 'active' : ''} onClick={() => switchTree('species')}>All species</button>
                   <button className={treeSource === 'genera' ? 'active' : ''} onClick={() => switchTree('genera')}>Genera</button>
                 </div>
-                {treeSource === 'species' && (
-                  <div className="seg" style={{ fontSize: 11 }}>
-                    <button className={!timeScaled ? 'active' : ''} onClick={() => setTimeScaled(false)}>Cladogram</button>
-                    <button className={timeScaled ? 'active' : ''} onClick={() => setTimeScaled(true)}>Chronogram</button>
-                  </div>
-                )}
                 {treeSource === 'species'
                   ? <SearchBox onPick={locateSpecies} />
                   : <GenusSearchBox genera={genera} onPick={locateGenusByName} />}
@@ -180,10 +177,30 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
               onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
               locate={locate} locateGenus={locateGenus} highlightSlugs={treeHighlight} />
             <div style={{
-              position: 'absolute', left: 14, bottom: 12, zIndex: 3, maxWidth: 300,
-              background: 'rgba(13,17,12,.6)', borderRadius: 8, padding: '6px 10px', backdropFilter: 'blur(2px)',
+              position: 'absolute', left: 14, bottom: 12, zIndex: 3,
+              display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start',
             }}>
-              <SubfamilyRiskLegend subs={SUBFAMILIES_ALL} showRisk={false} />
+              {treeSource === 'species' && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(13,17,12,.6)', borderRadius: 8, padding: '5px 9px', backdropFilter: 'blur(2px)',
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 9.5, letterSpacing: '.14em',
+                    textTransform: 'uppercase', color: 'var(--ink-faint)',
+                  }}>Layout</span>
+                  <div className="seg" style={{ fontSize: 10.5 }}>
+                    <button className={!timeScaled ? 'active' : ''} onClick={() => setTimeScaled(false)}>Cladogram</button>
+                    <button className={timeScaled ? 'active' : ''} onClick={() => setTimeScaled(true)}>Chronogram</button>
+                  </div>
+                </div>
+              )}
+              <div style={{
+                maxWidth: 300, background: 'rgba(13,17,12,.6)', borderRadius: 8,
+                padding: '6px 10px', backdropFilter: 'blur(2px)',
+              }}>
+                <SubfamilyRiskLegend subs={SUBFAMILIES_ALL} showRisk={false} />
+              </div>
             </div>
           </>
         )}
