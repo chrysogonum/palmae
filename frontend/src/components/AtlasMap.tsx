@@ -236,9 +236,11 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         )
       })()}
 
-      {/* legend */}
+      {/* legend — bottom-left over the map's ocean, but the scatter's origin lives there,
+          so in scatter view it moves to the empty top-left (high-richness / low-rainfall) */}
       <div style={{
-        position: 'absolute', left: 18, bottom: 16, fontSize: 11, color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)',
+        position: 'absolute', fontSize: 11, color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)',
+        ...(view === 'scatter' ? { left: 74, top: 62 } : { left: 18, bottom: 16 }),
       }}>
         {view === 'scatter' ? (
           <>
