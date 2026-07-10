@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from sqlalchemy import delete, func, insert, select
+from sqlalchemy import delete, func, insert, select, text
 
 from app import models as m
 from app.db import SessionLocal
@@ -46,10 +46,14 @@ def load_sources(session) -> None:
     # the citation-drift guard: a maintainer who adds a source and re-runs only this
     # step gets the new rows instead of an IntegrityError (which historically led to
     # the step being skipped and the Sources page silently under-citing).
+    # 'planned' flags à-la-carte sources (registered but not yet integrated); add the
+    # column defensively so this step stays runnable outside a full migration.
+    session.execute(text("ALTER TABLE data_source ADD COLUMN IF NOT EXISTS planned boolean DEFAULT false"))
     for s in sources.DATA_SOURCES:
         session.merge(m.DataSource(**s))
     session.flush()
-    print(f"  sources: {len(sources.DATA_SOURCES)} registered (upsert)")
+    planned = sum(1 for s in sources.DATA_SOURCES if s.get("planned"))
+    print(f"  sources: {len(sources.DATA_SOURCES)} registered (upsert); {planned} à-la-carte")
 
 
 def _slugify(genus: str | None, scientific_name: str, used: set[str]) -> str:

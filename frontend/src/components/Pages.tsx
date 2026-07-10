@@ -296,13 +296,16 @@ export function Sources({ go, focus }: { go: PageNav; focus?: { id: string; n: n
         <p className="page-lede">
           Every dataset behind the atlas, with its full citation, licence, and the role it plays. Where the
           app shows a value quoted from a source rather than computed here, it points back to one of these.
+          A few, marked <em>à la carte</em>, are registered but not yet integrated — candidate layers we
+          could add if there's interest.
         </p>
 
         <ol className="biblio">
           {sources.map((s) => (
-            <li className={`bib${hl === s.id ? ' bib-hl' : ''}`} key={s.id} id={`ref-${s.id}`}>
+            <li className={`bib${hl === s.id ? ' bib-hl' : ''}${s.planned ? ' bib-planned' : ''}`} key={s.id} id={`ref-${s.id}`}>
               <div className="bib-head">
                 <span className="bib-name">{s.name}</span>
+                {s.planned && <span className="bib-tag" title="Registered but not yet loaded — a candidate layer we can add on request">à la carte</span>}
                 {s.role && <span className="bib-role">{s.role}</span>}
               </div>
               {formatCitation(s) && <div className="bib-cite">{formatCitation(s)}</div>}

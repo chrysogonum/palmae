@@ -6,6 +6,7 @@ export interface DataSource {
   id: string; name: string; role: string | null; license: string | null
   note: string | null; authors: string | null; year: number | null
   title: string | null; venue: string | null; doi: string | null; url: string | null
+  planned?: boolean | null
 }
 
 export interface SearchResult {

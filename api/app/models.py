@@ -262,6 +262,7 @@ class DataSource(Base):
     venue: Mapped[str | None] = mapped_column(Text)
     doi: Mapped[str | None] = mapped_column(String)
     url: Mapped[str | None] = mapped_column(String)
+    planned: Mapped[bool | None] = mapped_column(Boolean, default=False)  # à la carte / not yet integrated
 
 
 class Photo(Base):

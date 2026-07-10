@@ -45,9 +45,10 @@ DATA_SOURCES = [
      "venue": "Kew Publishing, Royal Botanic Gardens, Kew (ISBN 9781842461822)",
      "doi": None,
      "url": "https://www.kewbooks.com/asp/BookDetails.asp?BookId=239"},
-    {"id": "ipni", "name": "IPNI — International Plant Names Index",
-     "role": "nomenclature (names, authors, place of publication)", "license": "CC-BY",
-     "note": "Canonical nomenclatural acts; supplies the IPNI ID carried on each taxon.",
+    {"id": "ipni", "name": "IPNI — International Plant Names Index", "planned": True,
+     "role": "stable name identifiers", "license": "CC-BY",
+     "note": "Not yet integrated — the schema reserves a stable IPNI identifier per name, "
+             "but it is not populated. A candidate layer, available on request.",
      "authors": "The International Plant Names Index (Kew, Harvard University Herbaria & ANBG)",
      "year": 2024,
      "title": "International Plant Names Index",
@@ -97,19 +98,22 @@ DATA_SOURCES = [
      "venue": "BMC Biology 21:50",
      "doi": "10.1186/s12915-023-01544-y",
      "url": "https://doi.org/10.1186/s12915-023-01544-y"},
-    {"id": "paftol", "name": "Baker et al. 2022 — Kew Tree of Life (PAFTOL)",
-     "role": "nuclear backbone · dated nodes", "license": "CC-BY 4.0",
-     "note": "Angiosperms353 nuclear phylogenomics; used for a defensible higher-level "
-             "palm backbone topology and deep-node age ranges (shown as ranges, not points).",
+    {"id": "paftol", "name": "Baker et al. 2022 — Kew Tree of Life (PAFTOL)", "planned": True,
+     "role": "nuclear phylogenomic backbone", "license": "CC-BY 4.0",
+     "note": "Not yet integrated — the Angiosperms353 nuclear backbone would sharpen the "
+             "tree's deep nodes and dating (we currently use Faurby for species, Yao for "
+             "genera). A candidate upgrade, available on request.",
      "authors": "Baker WJ, Bailey P, Barber V, Barker A, Bellot S, Bishop D, et al.",
      "year": 2022,
      "title": "A comprehensive phylogenomic platform for exploring the angiosperm tree of life",
      "venue": "Systematic Biology 71(2):301–319",
      "doi": "10.1093/sysbio/syab035",
      "url": "https://treeoflife.kew.org/"},
-    {"id": "zuntini2024", "name": "Zuntini, Baker et al. 2024 — dated angiosperm tree",
+    {"id": "zuntini2024", "name": "Zuntini, Baker et al. 2024 — dated angiosperm tree", "planned": True,
      "role": "divergence-time calibration", "license": "CC-BY 4.0",
-     "note": "Dated phylogenomic framework used for palm crown/divergence-age ranges.",
+     "note": "Not yet integrated — this dated angiosperm tree could re-anchor the chronogram's "
+             "divergence times (which currently come from Faurby's supertree calibration). "
+             "A candidate upgrade, available on request.",
      "authors": "Zuntini AR, Carruthers T, Maurin O, Bailey PC, Leempoel K, Brewer GE, et al.",
      "year": 2024,
      "title": "Phylogenomics and the rise of the angiosperms",
@@ -186,10 +190,11 @@ DATA_SOURCES = [
      "venue": "IUCN Red List API v4",
      "doi": None,
      "url": "https://www.iucnredlist.org/"},
-    {"id": "bgci", "name": "BGCI GlobalTreeSearch & PlantSearch",
+    {"id": "bgci", "name": "BGCI GlobalTreeSearch & PlantSearch", "planned": True,
      "role": "ex-situ holdings (arborescent palms)", "license": "CC-BY-NC 4.0",
-     "note": "Living-collection holdings for the tree-form palm subset — the ex-situ "
-             "safety-net picture. Rattans/acaulescent palms fall outside the tree definition.",
+     "note": "Not yet integrated — the atlas reserves a slot for ex-situ living-collection "
+             "counts (tree-form palms) from BGCI's GlobalTree Portal, but none are loaded. "
+             "Rattans/acaulescent palms fall outside the tree definition. Available on request.",
      "authors": "Botanic Gardens Conservation International (BGCI)",
      "year": 2024,
      "title": "GlobalTree Portal (GlobalTreeSearch · PlantSearch)",
@@ -221,21 +226,22 @@ DATA_SOURCES = [
      "venue": "International Journal of Climatology 37(12):4302–4315",
      "doi": "10.1002/joc.5086",
      "url": "https://www.worldclim.org/"},
-    {"id": "usda-zones", "name": "USDA Plant Hardiness Zone Map",
+    {"id": "usda-zones", "name": "USDA Plant Hardiness Zone Map", "planned": True,
      "role": "hardiness-zone geography", "license": "public domain",
-     "note": "US hardiness-zone geography (2023 revision) for the grower 'will it grow "
-             "where I live?' surface; the 2012→2023 shift is the growers' lived warming signal.",
+     "note": "Not yet integrated — USDA hardiness zones would drive a grower 'will it grow "
+             "where I live?' surface; the atlas currently derives a coldest-month cold edge "
+             "from WorldClim instead. A candidate layer, available on request.",
      "authors": "USDA Agricultural Research Service; PRISM Climate Group, Oregon State University",
      "year": 2023,
      "title": "USDA Plant Hardiness Zone Map",
      "venue": "United States Department of Agriculture",
      "doi": None,
      "url": "https://planthardiness.ars.usda.gov/"},
-    {"id": "pbdb", "name": "Paleobiology Database (fossil Arecaceae)",
+    {"id": "pbdb", "name": "Paleobiology Database (fossil Arecaceae)", "planned": True,
      "role": "deep-time fossil occurrences", "license": "CC-BY 4.0",
-     "note": "Fossil palm occurrences for the deep-time axis (palms at high latitudes in "
-             "the Eocene). Fossil genus taxonomy is coarse and reconciled manually; may "
-             "start as a curated illustrative layer.",
+     "note": "Not yet integrated — fossil palm occurrences could ground the chronogram's "
+             "deep-time axis with fossil calibrations (palms reached high latitudes in the "
+             "Eocene). A candidate layer, available on request.",
      "authors": "Paleobiology Database contributors",
      "year": 2024,
      "title": "The Paleobiology Database",

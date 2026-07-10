@@ -62,9 +62,9 @@ _REGION_CLIMATE = _load_region_climate()
 @router.get("/sources")
 def sources(db: Session = Depends(get_session)):
     cols = ("id", "name", "role", "license", "note",
-            "authors", "year", "title", "venue", "doi", "url")
+            "authors", "year", "title", "venue", "doi", "url", "planned")
     rows = db.execute(text(
-        f"select {', '.join(cols)} from data_source order by name")).all()
+        f"select {', '.join(cols)} from data_source order by planned nulls first, name")).all()
     return [dict(zip(cols, r)) for r in rows]
 
 
