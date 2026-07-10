@@ -15,15 +15,19 @@ approximation is labelled as one.
 - **Workbench** (the default home) — the palm tree of life and a world map, brushed against each other.
   Hover a clade → its native range lights up; click a map region → the tree lights up the branches that
   live there and a panel lists the region's palms; search a species (resolving synonyms) → it traces on
-  the tree and lights its range; click a branch → drill into a labelled, scrollable subtree. A toggle
-  switches the tree between the **all-species Faurby 2016 supertree** (2,539 tips) and the **modern,
-  bootstrap-supported Yao 2023 genus backbone** (177 genera).
+  the tree and lights its range; click a branch → drill into a labelled, scrollable subtree. Toggles
+  switch the tree between the **all-species Faurby 2016 supertree** (2,539 tips) and the **modern,
+  bootstrap-supported Yao 2023 genus backbone** (177 genera), and between a **cladogram** and a
+  **chronogram** — the Faurby tree is time-calibrated, so the chronogram draws real divergence times
+  (a ~105 Ma, mid-Cretaceous crown) with geological rings and the K–Pg boundary.
 - **Palm Line** — the money-shot. Every cleaned native occurrence, coloured by the coldest-month mean
   temperature (CMMT) where it grows. The family hugs the warm side of the ~2–8 °C frost line (Reichgelt
   et al. 2018); a curated set of hardy **renegades** (windmill palm, needle palm, Mazari palm…) light up
   where they hold on past it, each with its data-derived cold edge.
-- **World Atlas** — a species-richness choropleth (Borneo, Colombia, New Guinea, Madagascar light up);
-  click a region for its native palms.
+- **World Atlas** — palm richness by botanical country (Borneo, Colombia, New Guinea, Madagascar light
+  up), with **Rainfall** and richness×rainfall **Anomaly** layers, a **region-role** layer (radiator /
+  incubator / corridor / accumulator, after Kühnhäuser et al. 2025), and a **Scatter** view — showing not
+  just where palms are diverse but how climate and island geography explain it. Click a region for its palms.
 - **Field Guide** — a catalogue of all 2,591 species with placement, morphology, native range, conservation
   status (the real IUCN Red List category where assessed, a labelled Bellot 2022 prediction otherwise), and
   a derived coldest-month-climate block; filter by subfamily; every card links back onto the phylogeny.
@@ -41,6 +45,7 @@ approximation is labelled as one.
 | Phylogeny (all species) | Faurby et al. 2016 supertree | 2,539 tips · 2,235 species (86%) |
 | Phylogeny (genus backbone, with support) | Yao et al. 2023 (plastid) | 177 genera |
 | Occurrences × climate (the palm line) | GBIF × WorldClim 2.1 | 37,289 points (30,943 native) · 1,161 profiles |
+| Region climate & roles (atlas layers) | WorldClim 2.1 + Kühnhäuser et al. 2025 | 369 regions (rainfall, coldest-month temp, area); 16 role-classified |
 
 Conservation status is the **real IUCN Red List category** (CR/EN/VU/NT/LC/DD, with assessment year, via
 the Red List API v4) for the ~1,300 assessed palms, and the **Bellot et al. 2022 model prediction** —
@@ -121,7 +126,8 @@ Open biodiversity data; each source keeps its own licence and is attributed in f
 (occurrences, CC0/CC-BY), **WorldClim 2.1** (climate, CC-BY) with the **Reichgelt et al. 2018** frost-line
 calibration, **Bellot et al. 2022** (predicted extinction risk, CC-BY, from the authors' own release),
 the **IUCN Red List API v4** (real category + assessment year for assessed species, non-commercial,
-display-only), and **Genera Palmarum** (the subfamily/tribe/genus classification).
+display-only), **Kühnhäuser et al. 2025** (*Science*; the island-geography region roles), and
+**Genera Palmarum** (the subfamily/tribe/genus classification).
 
 ## License
 

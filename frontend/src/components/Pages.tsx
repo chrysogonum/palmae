@@ -47,17 +47,27 @@ const CAVEATS = [
         that hold on past it.`,
   },
   {
-    t: 'The tree has no branch support, and 14% of the family is off it',
+    t: 'The tree is a dated supertree: real times, but approximate, and no node support',
     d: `The phylogeny is the Faurby et al. (2016) complete family supertree — 2,539 tips, 86% of accepted
-        species reconciled onto it. The remaining ~14% are mostly genera described since 2015. The tree
-        file carries branch lengths but no node-support values, so we do not display confidence we cannot
-        source; closing that gap would need the PAFTOL backbone.`,
+        species reconciled onto it (the remaining ~14% are mostly genera described since 2015). It is
+        time-calibrated, so the Chronogram toggle shows genuine divergence times — a ~105-million-year,
+        mid-Cretaceous crown — but as a dated supertree those ages are estimates, tips lacking molecular
+        data are grafted by classification, and there are no node-support values. A phylogenomic backbone
+        (PAFTOL) would sharpen both dating and support.`,
   },
   {
     t: 'Leaf architecture — fan vs. feather — is not in the trait data',
     d: `PalmTraits 1.0 records growth form, stem, armature and fruit, but has no pinnate/palmate field.
         Rather than guess it, we leave it out until it can be brought in from Genera Palmarum. Where a
         figure is quoted from a source rather than computed here, it is marked in place.`,
+  },
+  {
+    t: 'The rainfall correlation and region roles are exploratory',
+    d: `Palm diversity tracks the wet tropics, but rainfall alone is a weak predictor — temperature (the
+        frost line) and island size and isolation matter as much. The World Atlas anomaly layer controls
+        for frost-free, sizeable regions before flagging where richness departs from rainfall, and the
+        region-role layer presents the biogeographic classification of Kühnhäuser et al. (2025). Both are
+        coarse at botanical-country scale, and offered as prompts for the eye, not as statistics.`,
   },
 ]
 
