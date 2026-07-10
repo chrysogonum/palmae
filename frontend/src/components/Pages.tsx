@@ -137,6 +137,39 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
           same view is the grower's question turned around: <em>will it grow where I live?</em>
         </p>
 
+        <h2 className="page-h2">Where palms grow, and why</h2>
+        <p className="page-p">
+          Palm diversity is not spread evenly. Open the{' '}
+          <button className="inline-link" onClick={() => go('atlas')}>World&nbsp;Atlas</button> and it piles
+          up in a few ever-wet corners of the tropics — Borneo, the western Amazon, New Guinea, Madagascar.
+          Toggle the map from richness to <em>rainfall</em> and the same regions light up: where it rains
+          hardest, palms are richest. Diversity tracks water.
+        </p>
+        <p className="page-p">
+          But water is only part of it. The <em>Scatter</em> view plots every region's richness against its
+          rainfall, and the cloud is loose — rainfall alone is a weak predictor. Two other things matter as
+          much: cold (the frost line again), and, above all, <em>isolation</em>. The <em>Anomaly</em> layer
+          holds temperature and island size constant and asks where richness still departs from what rainfall
+          predicts. The clearest signal is tropical Africa — the Congo basin is as wet as Borneo yet holds a
+          fraction of the palms, because ancient drying wiped lineages out. Palms need warm <em>and</em> wet{' '}
+          <em>and</em> reachable.
+        </p>
+        <p className="page-p">
+          The <em>Roles</em> layer names that mechanism, following Kühnhäuser et al. (2025): each region plays
+          a part in building diversity — Borneo a <em>radiator</em> that generates and exports species, New
+          Guinea and Sulawesi <em>incubators</em> breeding them in isolation, Java and Sumatra{' '}
+          <em>corridors</em>, the Philippines and Australia <em>accumulators</em> that gather what others made.
+          Island geography, not climate alone, is the deeper story.
+        </p>
+        <p className="page-p">
+          Palms are also old. The family's crown dates to roughly 105&nbsp;million years ago, in the
+          mid-Cretaceous — palms shaded the last dinosaurs and came through the asteroid winter that ended
+          them. In the <button className="inline-link" onClick={() => go('workbench')}>Workbench</button>,
+          switch the tree from <em>Cladogram</em> to <em>Chronogram</em> and the radius becomes deep time: the
+          ~105-million-year crown at the centre, the present at the rim, the K–Pg extinction marked as a ring.
+          The ages are estimates from a dated supertree, but the antiquity is real.
+        </p>
+
         <h2 className="page-h2">What to trust, and what's approximate</h2>
         <div className="caveats">
           {CAVEATS.map((c) => (
