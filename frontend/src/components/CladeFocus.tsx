@@ -49,10 +49,13 @@ export function CladeFocus({ data, kind = 'species', onSelect, onGenusClick }: {
     svg.selectAll('*').remove()
     const g = svg.append('g').attr('transform', 'translate(8,12)')
 
-    const linkGen = d3.linkHorizontal<d3.HierarchyPointLink<TreeNode>, HN>().x((d) => d.y).y((d) => d.x)
+    // right-angled elbows (matching the main tree's convention) rather than curved
+    // Béziers: out from the parent's depth, down to the child's row, across to the child
+    const elbow = (l: d3.HierarchyPointLink<TreeNode>) =>
+      `M${l.source.y},${l.source.x}V${l.target.x}H${l.target.y}`
     g.selectAll('path').data(root.links()).join('path')
       .attr('fill', 'none').attr('stroke', '#33402A').attr('stroke-width', 1)
-      .attr('d', linkGen as never)
+      .attr('d', elbow)
 
     const tip = g.selectAll('g.t').data(leaves).join('g').attr('class', 't')
       .attr('transform', (d) => `translate(${d.y},${d.x})`).style('cursor', 'pointer')
