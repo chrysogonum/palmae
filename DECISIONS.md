@@ -1,5 +1,33 @@
 # Decisions — Palmae
 
+## 2026-07-09 (make the repo public)
+**Decision:** Flip github.com/chrysogonum/palmae from **private to PUBLIC** (MIT code). Keep working-state
+docs local via `.gitignore` (untrack, no history purge).
+**Reason:** For a scientific atlas aimed at experts, an inspectable pipeline is a credibility multiplier —
+the whole session's integrity work only pays off if the methods are verifiable. Hygiene was clean (no
+secrets ever committed; data is CC0/CC-BY; no IUCN/GBIF bulk data in repo). Working docs (PROJECT_STATE,
+HANDOFF, NEXT, EXPERT_REVIEW, the Quercus note) are process/internal-critique, not product, so they're kept
+out — no history rewrite since they carry no secrets.
+**Impact:** Repo is discoverable (topics: palms, arecaceae, phylogenetics, biodiversity, d3…), About page
+links to it under the byline. Never commit a secret going forward — history is public.
+**Supersedes:** the 2026-07-07 "private repo" decision.
+
+## 2026-07-09 (real IUCN, à-la-carte sources, integrity pass)
+**Decision:** (a) Integrate the **real IUCN Red List v4** (categories/years), not just Bellot predictions.
+(b) Where a declared source isn't actually loaded, **flag it "à la carte"** rather than remove it or imply
+use. (c) Tree branches are **angled-only** (removed the straight/curved toggle) but gain a **Cladogram ⇄
+Chronogram** toggle. (d) The World Atlas **anomaly** is computed only among frost-free (CMMT≥10) + sizeable
+(area≥8 sq°) regions and framed as **exploratory**, citing Kühnhäuser 2025.
+**Reason:** The expert-readiness review found several places the UI outran the data (esp. IUCN, which was
+dead oak code). Honesty > polish for this audience. The naive richness-vs-rainfall anomaly was a trap
+(dominated by cold/island artifacts) — controlling for temperature + area surfaces the real biogeographic
+signal (tropical Africa) but is threshold-sensitive, hence exploratory framing. Branch *shape* carries no
+meaning (drop the choice) but cladogram-vs-time is a real scientific view (keep it).
+**Impact:** 1,266 palms carry real categories; 6 sources badged à-la-carte (BGCI/IPNI/PAFTOL/Zuntini/USDA/
+PBDB); `load_sources` now upserts (merge) to prevent citation drift. Deep-time dating is still Faurby's
+supertree calibration — PAFTOL/Zuntini/PBDB are the à-la-carte upgrades if we want better ages.
+**Supersedes:** N/A (extends conservation + tree decisions).
+
 ## 2026-07-07 (deploy + version control)
 
 **Decision:** Ship to **Cloudflare Pages** (live at palmae.pages.dev) and put the source in a **private**

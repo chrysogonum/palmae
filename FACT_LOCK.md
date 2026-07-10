@@ -1,6 +1,31 @@
 # Validated Facts — Palmae
 *Facts in this file are verified and should NOT be changed without explicit user instruction.*
-*Last updated: 2026-07-07 (verified against the database + primary sources this session).*
+*Last updated: 2026-07-09.*
+
+## Real IUCN Red List v4 (verified 2026-07-09, from the live DB + API)
+- **1,266** palms carry a genuine IUCN category (latest Global assessment, `iucn.py` fetch of family
+  Arecaceae): **184 CR · 202 EN · 133 VU · 73 NT · 520 LC · 126 DD · 1 EW · 1 EX** (+ a few LR/*).
+  1,300 assessments fetched, 1,266 matched to taxa (34 unmatched = synonym mismatches).
+- Conservation coverage after the IUCN overlay: **2,021** species (1,327 assessed / rest Bellot-predicted).
+- Header "threatened" count is now **1,124** (real IUCN CR/EN/VU + Bellot-predicted-threatened), down from
+  1,238 under Bellot-only — the real assessments reclassify some.
+
+## Deep time (verified 2026-07-09)
+- The Faurby 2016 tree is **ultrametric** (stdev of root-to-tip = 0.0000): crown age **105.386 Ma** (units
+  = millions of years), i.e. a **mid-Cretaceous** origin. Branch lengths are in `/tree` as `len`.
+
+## Region climate & anomaly (verified 2026-07-09, WorldClim 2.1 zonal means over TDWG level-3)
+- Rainfall (bio_12): Borneo **2,991 mm** · New Guinea 2,990 · Colombia 2,642 · Amazon (Brazil N) 2,224;
+  vs W. Sahara **36 mm** · Saudi 103 · Niger 144. 367 regions computed.
+- Richness×rainfall anomaly (rank residual, among CMMT≥10 °C + area≥8 sq° regions, 87 eligible): Gabon
+  **−0.20** (wet but palm-poor — the tropical-Africa signal), Madagascar +0.35, Queensland +0.36,
+  Borneo 0.0 (on the trend).
+- Ranges re-derived (doubtful/extinct no longer promoted to native): **6,023** records / **2,572** species
+  (8 doubtful/extinct records removed vs the prior 6,031).
+
+## Sources registry (verified 2026-07-09)
+- **22** sources in `data_source`; **6 à-la-carte** (registered, not loaded — reserved columns confirmed
+  0 non-null): BGCI, IPNI, PAFTOL, Zuntini 2024, USDA-zones, PBDB. Kühnhäuser et al. 2025 (Science) added.
 
 ## Loaded data counts (as of the 2026-07-07 `etl.run` ingest)
 Live counts drift with WCVP/GBIF versions; these are the verified state of this ingest.
