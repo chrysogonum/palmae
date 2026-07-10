@@ -10,7 +10,7 @@ const SUB_COLOR: Record<string, string> = {
 const NEUTRAL = '#4A5340'
 const subColor = (s: string | null | undefined) => (s && SUB_COLOR[s]) || NEUTRAL
 
-type HNode = d3.HierarchyPointNode<TreeNode> & { _sub?: string | null }
+type HNode = d3.HierarchyPointNode<TreeNode> & { _sub?: string | null; _age?: number }
 type LinkSel = d3.Selection<SVGPathElement, d3.HierarchyLink<TreeNode>, SVGGElement, unknown>
 type TipSel = d3.Selection<SVGCircleElement, HNode, SVGGElement, unknown>
 
@@ -34,8 +34,9 @@ function branchPath(l: d3.HierarchyLink<TreeNode>): string {
  *    branch→focus, click a tip→select, locate/highlight a species).
  *  - source='genera'  → the Yao 2023 plastid genus backbone (modern, bootstrap-
  *    supported): brush→regions, tips are genera, hover shows support. */
-export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, locateGenus, highlightSlugs }: {
+export function RadialTree({ source = 'species', timeScaled = false, onBrush, onBrushRegions, onSelect, onFocus, onGenusClick, locate, locateGenus, highlightSlugs }: {
   source?: 'species' | 'genera'
+  timeScaled?: boolean
   onBrush: (slugs: string[] | null) => void
   onBrushRegions?: (codes: string[] | null) => void
   onSelect: (slug: string) => void
@@ -84,9 +85,39 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
         ;(n as HNode)._sub = subs.size === 1 ? ([...subs][0] as string) : null
       })
 
+      // Chronogram mode (species tree only — the Faurby supertree is time-calibrated):
+      // set each node's radius by its age (cumulative branch length from the root) rather
+      // than topological depth, so the radial axis reads as deep time.
+      let maxAge = 0
+      const timeMode = timeScaled && !isGenus && (root.leaves() as HNode[]).some((l) => l.data.len != null)
+      if (timeMode) {
+        root.eachBefore((n) => { (n as HNode)._age = ((n.parent as HNode | null)?._age ?? 0) + (n.data.len ?? 0) })
+        maxAge = d3.max(root.leaves() as HNode[], (l) => l._age ?? 0) ?? 1
+        if (maxAge > 0) root.each((n) => { (n as HNode).y = R * ((n as HNode)._age! / maxAge) })
+      }
+
       const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
       const g = svg.append('g').attr('transform', `translate(${W / 2},${CY})`)
+
+      // geological time rings (Ma before present) behind the tree
+      if (timeMode && maxAge > 0) {
+        const ax = g.append('g').style('pointer-events', 'none')
+        for (const ma of [100, 66, 50, 34, 23, 5]) {
+          if (ma >= maxAge) continue
+          const rr = R * (1 - ma / maxAge)
+          const kpg = ma === 66
+          ax.append('circle').attr('r', rr).attr('fill', 'none')
+            .attr('stroke', kpg ? '#8A6A44' : '#222A1B').attr('stroke-width', kpg ? 1.2 : 0.7)
+            .attr('stroke-dasharray', kpg ? '4,3' : undefined as never)
+          ax.append('text').attr('x', 0).attr('y', -rr - 3).attr('text-anchor', 'middle')
+            .attr('font-size', 9).attr('font-family', 'var(--font-mono)').attr('fill', kpg ? '#B08A5A' : '#5E6350')
+            .text(kpg ? '66 Ma · K–Pg' : `${ma} Ma`)
+        }
+        ax.append('text').attr('x', 0).attr('y', 11).attr('text-anchor', 'middle')
+          .attr('font-size', 9).attr('font-family', 'var(--font-mono)').attr('fill', '#5E6350')
+          .text(`~${Math.round(maxAge)} Ma`)
+      }
       const linkGen = branchPath
 
       const links: LinkSel = g.selectAll<SVGPathElement, d3.HierarchyLink<TreeNode>>('path.lk')
@@ -210,7 +241,7 @@ export function RadialTree({ source = 'species', onBrush, onBrushRegions, onSele
       })
     })
     return () => { cancelled = true }
-  }, [source, onBrush, onBrushRegions, onSelect, onFocus, onGenusClick])
+  }, [source, timeScaled, onBrush, onBrushRegions, onSelect, onFocus, onGenusClick])
 
   // search-to-locate (single species) and region → tree (many species): trace the
   // path(s) to the root and mark the tips. locate wins if both are set.

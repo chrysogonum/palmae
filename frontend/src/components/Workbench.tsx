@@ -44,6 +44,7 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
   regionRef.current = region
   const [treeHighlight, setTreeHighlight] = useState<Set<string> | null>(null)
   const [treeSource, setTreeSource] = useState<'species' | 'genera'>('species')
+  const [timeScaled, setTimeScaled] = useState(false)  // cladogram ⇄ chronogram (species tree)
   const [genera, setGenera] = useState<{ genus: string; nSpecies: number }[]>([])
   const [locateGenus, setLocateGenus] = useState<{ genus: string; n: number } | null>(null)
 
@@ -155,19 +156,27 @@ export function Workbench({ locateReq, onSeeOnTree, onGenusClick }: {
               title={treeSource === 'genera' ? 'Palm genera' : 'Palm tree of life'}
               meta={treeSource === 'genera'
                 ? 'Yao 2023 · 177 genera · bootstrap support · cladogram'
-                : 'Faurby 2016 · 2,539 tips · cladogram (relationships, not branch lengths)'}
+                : timeScaled
+                  ? 'Faurby 2016 · dated supertree · radius = Ma before present · ages approximate'
+                  : 'Faurby 2016 · 2,539 tips · cladogram (relationships, not branch lengths)'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto' }}>
                 <div className="seg" style={{ fontSize: 11 }}>
                   <button className={treeSource === 'species' ? 'active' : ''} onClick={() => switchTree('species')}>All species</button>
                   <button className={treeSource === 'genera' ? 'active' : ''} onClick={() => switchTree('genera')}>Genera</button>
                 </div>
+                {treeSource === 'species' && (
+                  <div className="seg" style={{ fontSize: 11 }}>
+                    <button className={!timeScaled ? 'active' : ''} onClick={() => setTimeScaled(false)}>Cladogram</button>
+                    <button className={timeScaled ? 'active' : ''} onClick={() => setTimeScaled(true)}>Chronogram</button>
+                  </div>
+                )}
                 {treeSource === 'species'
                   ? <SearchBox onPick={locateSpecies} />
                   : <GenusSearchBox genera={genera} onPick={locateGenusByName} />}
               </div>
             </Head>
-            <RadialTree source={treeSource} onBrush={onBrush} onBrushRegions={onBrushRegions}
+            <RadialTree source={treeSource} timeScaled={timeScaled} onBrush={onBrush} onBrushRegions={onBrushRegions}
               onSelect={onSelect} onFocus={onFocus} onGenusClick={onGenusClick}
               locate={locate} locateGenus={locateGenus} highlightSlugs={treeHighlight} />
             <div style={{
