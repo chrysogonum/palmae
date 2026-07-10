@@ -85,18 +85,25 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
       }
 
       const g = svg.append('g')
+      // track the currently-highlighted region so we clear it on the next move rather
+      // than relying on a per-path mouseleave (which .raise() makes unreliable — that
+      // left every swept-over region stuck lit)
+      let lit: SVGPathElement | null = null
+      const clear = () => { if (lit) { d3.select(lit).attr('stroke', '#0D110C').attr('stroke-width', 0.4); lit = null } }
       g.selectAll('path').data(features).join('path')
         .attr('d', path as never)
         .attr('fill', (d) => { const r = byCode.get(d.properties.LEVEL3_COD); return r ? fill(r) : '#171C12' })
         .attr('stroke', '#0D110C').attr('stroke-width', 0.4).style('cursor', 'pointer')
         .on('mousemove', function (event, d) {
           const [x, y] = d3.pointer(event, wrap.current)
-          d3.select(this).attr('stroke', '#D9B25A').attr('stroke-width', 1).raise()
+          if (lit !== this) { clear(); d3.select(this).attr('stroke', '#D9B25A').attr('stroke-width', 1).raise(); lit = this as SVGPathElement }
           const r = byCode.get(d.properties.LEVEL3_COD)
           if (r) setHover({ name: d.properties.LEVEL3_NAM, row: r, x, y })
         })
-        .on('mouseleave', function () { d3.select(this).attr('stroke', '#0D110C').attr('stroke-width', 0.4); setHover(null) })
         .on('click', (_e, d) => setRegion({ code: d.properties.LEVEL3_COD, name: d.properties.LEVEL3_NAM }))
+      // moving onto open ocean (svg background, no region) or off the map clears it
+      svg.on('mousemove', (event) => { if (event.target === svgRef.current) { clear(); setHover(null) } })
+        .on('mouseleave', () => { clear(); setHover(null) })
 
       requestAnimationFrame(() => {
         g.selectAll<SVGPathElement, unknown>('path').each(function () {
@@ -110,6 +117,7 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
       const H = wrap.current!.clientHeight
       const svg = d3.select(svgRef.current!).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
+      svg.on('mousemove', null).on('mouseleave', null)  // drop the map view's svg-level handlers
       const m = { top: 34, right: 30, bottom: 48, left: 58 }
       const pts = rows.filter((r) => r.rainfall != null)
       const x = d3.scaleLinear().domain([0, (d3.max(pts, (r) => r.rainfall!) ?? 5000) * 1.02]).range([m.left, W - m.right])
