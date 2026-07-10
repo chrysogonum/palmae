@@ -116,6 +116,19 @@ DATA_SOURCES = [
      "venue": "Nature 629:843–850",
      "doi": "10.1038/s41586-024-07324-0",
      "url": "https://doi.org/10.1038/s41586-024-07324-0"},
+    {"id": "kuhnhauser2025", "name": "Kühnhäuser et al. 2025 — island geography & rattan diversity",
+     "role": "biogeography of Asian palm diversity", "license": "citation",
+     "note": "Species-level phylogenomics + fossils of the rattans (Calamoideae) show that "
+             "region size and isolation — not climate alone — drive tropical-Asian palm "
+             "diversity, classifying regions as radiators, incubators, corridors, and "
+             "accumulators. The evidence behind the atlas's richness × rainfall anomaly "
+             "(why wet-but-isolated regions are palm-poor) and the region-role layer.",
+     "authors": "Kühnhäuser BG, Bates CD, Dransfield J, Bellot S, Eiserhardt WL, Baker WJ, et al.",
+     "year": 2025,
+     "title": "Island geography drives evolution of rattan palms in tropical Asian rainforests",
+     "venue": "Science 387:6739",
+     "doi": "10.1126/science.adp3437",
+     "url": "https://doi.org/10.1126/science.adp3437"},
 
     # --- Occurrences & distribution -------------------------------------------
     {"id": "gbif", "name": "GBIF — Global Biodiversity Information Facility",

@@ -10,92 +10,75 @@ interface Feature {
   properties: { LEVEL3_COD: string; LEVEL3_NAM: string }
   geometry: GeoJSON.Geometry
 }
-interface Hover { name: string; richness: number; rainfall: number | null; x: number; y: number }
-type Layer = 'richness' | 'rainfall'
+interface Hover { name: string; row: RegionRichness; x: number; y: number }
+type Layer = 'richness' | 'rainfall' | 'anomaly'
+type View = 'map' | 'scatter'
 
-// Two views of the same geography. Flip between them and the wet tropics and the
-// palm-diversity hotspots light up in the same places — the correlation, shown.
-const LAYERS: Record<Layer, {
-  label: string; value: (r: RegionRichness) => number | null; ramp: string[]; fmt: (v: number) => string
-}> = {
-  richness: {
-    label: 'Native palm species per region',
-    value: (r) => r.richness,
-    ramp: ['#1B2415', '#2E6B3E', '#7FB86A', '#E7C766'],
-    fmt: (v) => `${v}`,
-  },
-  rainfall: {
-    label: 'Mean annual rainfall (mm)',
-    value: (r) => r.rainfall,
-    ramp: ['#20180F', '#6E5A2E', '#2E8A7E', '#6FC7E0'],
-    fmt: (v) => v.toLocaleString(),
-  },
+const RICH_RAMP = ['#1B2415', '#2E6B3E', '#7FB86A', '#E7C766']
+const RAIN_RAMP = ['#20180F', '#6E5A2E', '#2E8A7E', '#6FC7E0']
+// coldest-month mean temperature, cold → warm (matches the Palm Line)
+const cmmtColor = d3.scaleLinear<string>()
+  .domain([-5, 5, 12, 20, 28]).range(['#4C7BB0', '#8FBEDC', '#CBD9C4', '#8FBE6B', '#E0A63C']).clamp(true)
+// richness × rainfall anomaly: palm-POOR (brown) ← 0 → palm-RICH for the rain (green)
+const anomColor = d3.scaleLinear<string>()
+  .domain([-0.6, 0, 0.6]).range(['#C6803C', '#2A2E22', '#5FC07D']).clamp(true)
+
+const MAP_LAYERS: Record<'richness' | 'rainfall', { label: string; ramp: string[]; val: (r: RegionRichness) => number | null; fmt: (v: number) => string }> = {
+  richness: { label: 'Native palm species per region', ramp: RICH_RAMP, val: (r) => r.richness, fmt: (v) => `${v}` },
+  rainfall: { label: 'Mean annual rainfall (mm)', ramp: RAIN_RAMP, val: (r) => r.rainfall, fmt: (v) => v.toLocaleString() },
 }
 
-/** World map of palm species richness by TDWG botanical country, with a rainfall
- *  overlay — the diversity reveal (Borneo, Colombia, New Guinea light up) and the
- *  wet-tropics correlation behind it. The hover always reports both numbers, so the
- *  correlation reads at a glance whichever layer colours the map. */
+/** World map of palm richness with rainfall and richness×rainfall-anomaly layers, plus
+ *  a scatter view. Shows the wet-tropics correlation and — controlling for frost and
+ *  island area — where diversity departs from what rainfall predicts (the size/isolation
+ *  signal of Kühnhäuser et al. 2025). */
 export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void }) {
   const wrap = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
-  const cache = useRef<{ rows: RegionRichness[]; geo: { features: Feature[] } } | null>(null)
+  const cache = useRef<{ rows: RegionRichness[]; geo: { features: Feature[] }; name: Map<string, string> } | null>(null)
   const [hover, setHover] = useState<Hover | null>(null)
-  const [max, setMax] = useState(0)
+  const [view, setView] = useState<View>('map')
   const [layer, setLayer] = useState<Layer>('richness')
   const [region, setRegion] = useState<{ code: string; name: string } | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    const cfg = LAYERS[layer]
 
-    const draw = (rows: RegionRichness[], geo: { features: Feature[] }) => {
-      if (cancelled || !wrap.current || !svgRef.current) return
+    const drawMap = (rows: RegionRichness[], geo: { features: Feature[] }) => {
       const byCode = new Map(rows.map((r) => [r.code, r]))
-      const maxV = d3.max(rows, (r) => cfg.value(r) ?? 0) ?? 1
-      setMax(maxV)
-
-      const W = wrap.current.clientWidth
-      const H = wrap.current.clientHeight
-      const svg = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`)
+      const W = wrap.current!.clientWidth
+      const H = wrap.current!.clientHeight
+      const svg = d3.select(svgRef.current!).attr('viewBox', `0 0 ${W} ${H}`)
       svg.selectAll('*').remove()
-
       const features = geo.features
-      const projection = d3.geoNaturalEarth1()
-        .fitSize([W, H - 8], { type: 'FeatureCollection', features } as never)
+      const projection = d3.geoNaturalEarth1().fitSize([W, H - 8], { type: 'FeatureCollection', features } as never)
       const path = d3.geoPath(projection)
-      const color = d3.scaleSequentialSqrt<string>()
-        .domain([0, maxV])
-        .interpolator(d3.interpolateRgbBasis(cfg.ramp))
+
+      let fill: (r: RegionRichness) => string
+      if (layer === 'anomaly') {
+        fill = (r) => (r.anomaly == null ? '#171C12' : anomColor(r.anomaly))
+      } else {
+        const cfg = MAP_LAYERS[layer]
+        const maxV = d3.max(rows, (r) => cfg.val(r) ?? 0) ?? 1
+        const scale = d3.scaleSequentialSqrt<string>().domain([0, maxV]).interpolator(d3.interpolateRgbBasis(cfg.ramp))
+        fill = (r) => { const v = cfg.val(r); return v != null && v > 0 ? scale(v) : '#171C12' }
+      }
 
       const g = svg.append('g')
-      g.selectAll('path')
-        .data(features)
-        .join('path')
+      g.selectAll('path').data(features).join('path')
         .attr('d', path as never)
-        .attr('fill', (d) => {
-          const row = byCode.get(d.properties.LEVEL3_COD)
-          const v = row ? cfg.value(row) : null
-          return v != null && v > 0 ? color(v) : '#171C12'
-        })
-        .attr('stroke', '#0D110C')
-        .attr('stroke-width', 0.4)
-        .style('cursor', 'pointer')
+        .attr('fill', (d) => { const r = byCode.get(d.properties.LEVEL3_COD); return r ? fill(r) : '#171C12' })
+        .attr('stroke', '#0D110C').attr('stroke-width', 0.4).style('cursor', 'pointer')
         .on('mousemove', function (event, d) {
           const [x, y] = d3.pointer(event, wrap.current)
           d3.select(this).attr('stroke', '#D9B25A').attr('stroke-width', 1).raise()
-          const row = byCode.get(d.properties.LEVEL3_COD)
-          setHover({ name: d.properties.LEVEL3_NAM, richness: row?.richness ?? 0, rainfall: row?.rainfall ?? null, x, y })
+          const r = byCode.get(d.properties.LEVEL3_COD)
+          if (r) setHover({ name: d.properties.LEVEL3_NAM, row: r, x, y })
         })
-        .on('mouseleave', function () {
-          d3.select(this).attr('stroke', '#0D110C').attr('stroke-width', 0.4)
-          setHover(null)
-        })
+        .on('mouseleave', function () { d3.select(this).attr('stroke', '#0D110C').attr('stroke-width', 0.4); setHover(null) })
         .on('click', (_e, d) => setRegion({ code: d.properties.LEVEL3_COD, name: d.properties.LEVEL3_NAM }))
 
-      // Drop antimeridian-smeared / degenerate polygons after layout (getBBox reads 0
-      // if measured before paint).
       requestAnimationFrame(() => {
         g.selectAll<SVGPathElement, unknown>('path').each(function () {
           try { if (this.getBBox().width > W * 0.6) this.remove() } catch { /* detached */ }
@@ -103,44 +86,122 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
       })
     }
 
-    if (cache.current) {
-      draw(cache.current.rows, cache.current.geo)
-    } else {
-      Promise.all([
-        api.ranges(),
-        fetch('/data/tdwg_level3.geojson').then((r) => r.json()),
-      ]).then(([rows, geo]) => {
+    const drawScatter = (rows: RegionRichness[], name: Map<string, string>) => {
+      const W = wrap.current!.clientWidth
+      const H = wrap.current!.clientHeight
+      const svg = d3.select(svgRef.current!).attr('viewBox', `0 0 ${W} ${H}`)
+      svg.selectAll('*').remove()
+      const m = { top: 34, right: 30, bottom: 48, left: 58 }
+      const pts = rows.filter((r) => r.rainfall != null)
+      const x = d3.scaleLinear().domain([0, (d3.max(pts, (r) => r.rainfall!) ?? 5000) * 1.02]).range([m.left, W - m.right])
+      const y = d3.scaleLinear().domain([0, (d3.max(pts, (r) => r.richness) ?? 300) * 1.05]).range([H - m.bottom, m.top]).nice()
+
+      const g = svg.append('g')
+      // axes + faint gridlines
+      const xa = d3.axisBottom(x).ticks(6).tickFormat((d) => `${(+d).toLocaleString()}`)
+      const ya = d3.axisLeft(y).ticks(6)
+      g.append('g').attr('transform', `translate(0,${H - m.bottom})`).call(xa)
+        .call((s) => s.selectAll('text').attr('fill', 'var(--ink-faint)').attr('font-size', 10))
+        .call((s) => s.selectAll('line,path').attr('stroke', 'var(--hairline)'))
+      g.append('g').attr('transform', `translate(${m.left},0)`).call(ya)
+        .call((s) => s.selectAll('text').attr('fill', 'var(--ink-faint)').attr('font-size', 10))
+        .call((s) => s.selectAll('line,path').attr('stroke', 'var(--hairline)'))
+      g.append('text').attr('x', (m.left + W - m.right) / 2).attr('y', H - 10).attr('text-anchor', 'middle')
+        .attr('fill', 'var(--ink-muted)').attr('font-size', 11).text('Mean annual rainfall (mm)')
+      g.append('text').attr('transform', `translate(15,${(m.top + H - m.bottom) / 2}) rotate(-90)`).attr('text-anchor', 'middle')
+        .attr('fill', 'var(--ink-muted)').attr('font-size', 11).text('Native palm species')
+
+      // trend over the eligible set (warm + sizeable) — the baseline the anomaly measures against
+      const elig = pts.filter((r) => r.anomaly != null).slice().sort((a, b) => a.rainfall! - b.rainfall!)
+      if (elig.length > 12) {
+        const nb = 8, per = Math.ceil(elig.length / nb), pts2: [number, number][] = []
+        for (let i = 0; i < elig.length; i += per) {
+          const chunk = elig.slice(i, i + per)
+          const mx = d3.mean(chunk, (r) => r.rainfall!)!
+          const my = d3.median(chunk, (r) => r.richness)!
+          pts2.push([mx, my])
+        }
+        g.append('path').datum(pts2).attr('fill', 'none').attr('stroke', 'var(--ink-faint)')
+          .attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3').attr('opacity', 0.7)
+          .attr('d', d3.line<[number, number]>().x((d) => x(d[0])).y((d) => y(d[1])).curve(d3.curveMonotoneX))
+      }
+
+      // dots — colour by coldest-month temperature; dim the ones excluded from the anomaly
+      g.selectAll('circle').data(pts).join('circle')
+        .attr('cx', (r) => x(r.rainfall!)).attr('cy', (r) => y(r.richness))
+        .attr('r', 3.6).attr('fill', (r) => (r.cmmt != null ? cmmtColor(r.cmmt) : '#4A5340'))
+        .attr('stroke', '#0D110C').attr('stroke-width', 0.5)
+        .attr('opacity', (r) => (r.anomaly != null ? 0.92 : 0.32)).style('cursor', 'pointer')
+        .on('mousemove', function (event, r) {
+          const [px, py] = d3.pointer(event, wrap.current)
+          d3.select(this).attr('stroke', '#EDF0E2').attr('stroke-width', 1.3).attr('r', 5).raise()
+          setHover({ name: name.get(r.code) ?? r.code, row: r, x: px, y: py })
+        })
+        .on('mouseleave', function () { d3.select(this).attr('stroke', '#0D110C').attr('stroke-width', 0.5).attr('r', 3.6); setHover(null) })
+        .on('click', (_e, r) => setRegion({ code: r.code, name: name.get(r.code) ?? r.code }))
+
+      // label the notable outliers + the biggest hotspots
+      const byAnom = elig.slice().sort((a, b) => a.anomaly! - b.anomaly!)
+      const labelSet = new Set([...byAnom.slice(0, 3), ...byAnom.slice(-3),
+        ...pts.slice().sort((a, b) => b.richness - a.richness).slice(0, 3)].map((r) => r.code))
+      g.selectAll('text.lbl').data(pts.filter((r) => labelSet.has(r.code))).join('text').attr('class', 'lbl')
+        .attr('x', (r) => x(r.rainfall!) + 7).attr('y', (r) => y(r.richness) + 3)
+        .attr('font-size', 10.5).attr('fill', 'var(--ink-muted)')
+        .attr('font-style', 'italic').text((r) => name.get(r.code) ?? r.code)
+    }
+
+    const render = (c: { rows: RegionRichness[]; geo: { features: Feature[] }; name: Map<string, string> }) => {
+      if (cancelled || !wrap.current || !svgRef.current) return
+      if (view === 'scatter') drawScatter(c.rows, c.name)
+      else drawMap(c.rows, c.geo)
+    }
+
+    if (cache.current) render(cache.current)
+    else {
+      Promise.all([api.ranges(), fetch('/data/tdwg_level3.geojson').then((r) => r.json())]).then(([rows, geo]) => {
         if (cancelled) return
-        cache.current = { rows: rows as RegionRichness[], geo }
-        draw(rows as RegionRichness[], geo)
+        const name = new Map((geo.features as Feature[]).map((f) => [f.properties.LEVEL3_COD, f.properties.LEVEL3_NAM]))
+        cache.current = { rows: rows as RegionRichness[], geo, name }
+        render(cache.current)
       })
     }
     return () => { cancelled = true }
-  }, [layer])
+  }, [view, layer])
 
-  const cfg = LAYERS[layer]
   return (
     <div ref={wrap} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <svg ref={svgRef} style={{ width: '100%', height: '100%', display: 'block' }} />
 
-      {/* layer toggle */}
-      <div style={{ position: 'absolute', top: 18, left: 18, zIndex: 6 }}>
+      {/* view + layer controls */}
+      <div style={{ position: 'absolute', top: 18, left: 18, zIndex: 6, display: 'flex', gap: 10 }}>
         <div className="seg" style={{ fontSize: 12 }}>
-          <button className={layer === 'richness' ? 'active' : ''} onClick={() => setLayer('richness')}>Palm richness</button>
-          <button className={layer === 'rainfall' ? 'active' : ''} onClick={() => setLayer('rainfall')}>Rainfall</button>
+          <button className={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>Map</button>
+          <button className={view === 'scatter' ? 'active' : ''} onClick={() => setView('scatter')}>Scatter</button>
         </div>
+        {view === 'map' && (
+          <div className="seg" style={{ fontSize: 12 }}>
+            <button className={layer === 'richness' ? 'active' : ''} onClick={() => setLayer('richness')}>Palm richness</button>
+            <button className={layer === 'rainfall' ? 'active' : ''} onClick={() => setLayer('rainfall')}>Rainfall</button>
+            <button className={layer === 'anomaly' ? 'active' : ''} onClick={() => setLayer('anomaly')}>Anomaly</button>
+          </div>
+        )}
       </div>
 
       {hover && (() => {
-        // both numbers, active layer first — so the correlation reads in one glance
-        const rich = hover.richness > 0 ? `${hover.richness} native palm species` : 'no native palms'
-        const rain = hover.rainfall != null ? `${hover.rainfall.toLocaleString()} mm rain / yr` : null
-        const lines = (layer === 'rainfall' ? [rain, rich] : [rich, rain]).filter(Boolean) as string[]
+        const r = hover.row
+        const lines: string[] = []
+        lines.push(r.richness > 0 ? `${r.richness} native palm species` : 'no native palms')
+        if (r.rainfall != null) lines.push(`${r.rainfall.toLocaleString()} mm rain / yr`)
+        if (r.cmmt != null) lines.push(`coldest month ${r.cmmt}°C`)
+        if (r.anomaly != null) lines.push(Math.abs(r.anomaly) < 0.15 ? 'about as many palms as rain predicts'
+          : r.anomaly > 0 ? 'palm-RICH for its rainfall' : 'palm-POOR for its rainfall')
+        // order: put the active metric first on the map
+        if (view === 'map' && layer === 'rainfall' && r.rainfall != null) lines.unshift(lines.splice(1, 1)[0])
         return (
           <div style={{
             position: 'absolute', left: hover.x + 14, top: hover.y + 12, pointerEvents: 'none',
             background: 'var(--ground-raised)', border: '1px solid var(--hairline)',
-            borderRadius: 8, padding: '8px 11px', fontSize: 12.5, maxWidth: 230, zIndex: 5,
+            borderRadius: 8, padding: '8px 11px', fontSize: 12.5, maxWidth: 240, zIndex: 5,
           }}>
             <div style={{ fontWeight: 700 }}>{hover.name}</div>
             {lines.map((t, i) => (
@@ -153,22 +214,49 @@ export function AtlasMap({ onSeeOnTree }: { onSeeOnTree?: (slug: string) => void
         )
       })()}
 
+      {/* legend */}
       <div style={{
-        position: 'absolute', left: 18, bottom: 16, fontSize: 11,
-        color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)',
+        position: 'absolute', left: 18, bottom: 16, fontSize: 11, color: 'var(--ink-muted)', fontFamily: 'var(--font-mono)',
       }}>
-        <div style={{ letterSpacing: '.14em', textTransform: 'uppercase', fontSize: 9, marginBottom: 5, color: 'var(--ink-faint)' }}>
-          {cfg.label}
-        </div>
-        <div style={{ width: 180, height: 9, borderRadius: 5, background: `linear-gradient(90deg,${cfg.ramp.join(',')})` }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: 180, marginTop: 3 }}>
-          <span>0</span><span>{cfg.fmt(max)}</span>
-        </div>
-        <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 250, lineHeight: 1.4 }}>
-          {layer === 'rainfall'
-            ? 'WorldClim bio12, mean per region. Palm diversity peaks in the wet tropics — with dry-adapted exceptions.'
-            : 'Diversity peaks in the ever-wet tropics; toggle Rainfall to see why.'}
-        </div>
+        {view === 'scatter' ? (
+          <>
+            <div style={{ letterSpacing: '.14em', textTransform: 'uppercase', fontSize: 9, marginBottom: 5, color: 'var(--ink-faint)' }}>
+              Coldest-month temperature
+            </div>
+            <div style={{ width: 180, height: 9, borderRadius: 5, background: 'linear-gradient(90deg,#4C7BB0,#8FBEDC,#CBD9C4,#8FBE6B,#E0A63C)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: 180, marginTop: 3 }}><span>cold</span><span>warm</span></div>
+            <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 300, lineHeight: 1.4 }}>
+              One dot = one region. Dashed line = typical richness vs rainfall among frost-free, sizeable
+              regions; dim dots (cold or tiny islands) are outside that comparison. Labels flag the outliers.
+            </div>
+          </>
+        ) : layer === 'anomaly' ? (
+          <>
+            <div style={{ letterSpacing: '.14em', textTransform: 'uppercase', fontSize: 9, marginBottom: 5, color: 'var(--ink-faint)' }}>
+              Richness vs rainfall (frost-free regions)
+            </div>
+            <div style={{ width: 180, height: 9, borderRadius: 5, background: 'linear-gradient(90deg,#C6803C,#2A2E22,#5FC07D)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: 200, marginTop: 3 }}>
+              <span>fewer palms</span><span>more</span>
+            </div>
+            <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 300, lineHeight: 1.4 }}>
+              Grey = cold, tiny, or dry (excluded). Fewer-than-rainfall-predicts is the size/isolation
+              signal — e.g. wet but palm-poor tropical Africa (Kühnhäuser et al. 2025). Exploratory; coarse at region scale.
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ letterSpacing: '.14em', textTransform: 'uppercase', fontSize: 9, marginBottom: 5, color: 'var(--ink-faint)' }}>
+              {MAP_LAYERS[layer].label}
+            </div>
+            <div style={{ width: 180, height: 9, borderRadius: 5, background: `linear-gradient(90deg,${MAP_LAYERS[layer].ramp.join(',')})` }} />
+            <div style={{ fontSize: 9.5, color: 'var(--ink-faint)', marginTop: 7, maxWidth: 260, lineHeight: 1.4 }}>
+              {layer === 'rainfall'
+                ? 'WorldClim bio12. Diversity peaks in the wet tropics — with dry-adapted exceptions.'
+                : 'Diversity peaks in the ever-wet tropics; try Rainfall and Anomaly.'}
+            </div>
+          </>
+        )}
       </div>
 
       {region && (

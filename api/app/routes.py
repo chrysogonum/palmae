@@ -40,19 +40,20 @@ def _load_tdwg_names() -> dict[str, str]:
 _TDWG_NAMES = _load_tdwg_names()
 
 
-def _load_region_rainfall() -> dict[str, int]:
-    """TDWG level-3 code → mean annual rainfall (mm), precomputed by etl.region_rainfall
-    (WorldClim bio_12 zonal means). The 'wet tropics' layer for the atlas."""
+def _load_region_climate() -> dict[str, dict]:
+    """TDWG level-3 code → {rain (mm), cmmt (°C)}, precomputed by etl.region_climate
+    (WorldClim zonal means). Rainfall drives the 'wet tropics' atlas layer; CMMT lets
+    the richness×rainfall anomaly control for 'too cold for palms' vs genuinely poor."""
     import json
     from pathlib import Path
-    path = Path(__file__).resolve().parents[2] / "data" / "region_rainfall.json"
+    path = Path(__file__).resolve().parents[2] / "data" / "region_climate.json"
     try:
         return json.loads(path.read_text())
     except Exception:  # noqa: BLE001
         return {}
 
 
-_REGION_RAINFALL = _load_region_rainfall()
+_REGION_CLIMATE = _load_region_climate()
 
 
 # --------------------------------------------------------------------------- #
@@ -200,10 +201,31 @@ def ranges(species: str | None = None, db: Session = Depends(get_session)):
         from range_region group by tdwg_code
     """)).all()
     richness = {c: n for c, n in rows}
-    # union with all rainfall-covered regions, so palm-less dry regions (Sahara,
-    # Arabia…) still render on the rainfall layer — that contrast is the point
-    codes = set(richness) | set(_REGION_RAINFALL)
-    return [{"code": c, "richness": richness.get(c, 0), "rainfall": _REGION_RAINFALL.get(c)} for c in sorted(codes)]
+    clim = _REGION_CLIMATE
+    # union with all climate-covered regions, so palm-less dry regions (Sahara,
+    # Arabia…) still render on the rainfall layer — that contrast is the point.
+    codes = set(richness) | set(clim)
+    # richness × rainfall anomaly, among frost-free & sizeable regions only — so it
+    # isn't just rediscovering cold (frost line) or tiny-island isolation. That size +
+    # isolation, not rainfall, drives palm diversity is the Kühnhäuser et al. 2025 point.
+    elig = [c for c in codes
+            if clim.get(c) and clim[c].get("cmmt", -99) >= 10
+            and clim[c].get("area", 0) >= 8 and clim[c].get("rain") is not None]
+
+    def _pct(vals: list[float]) -> list[float]:
+        order = sorted(range(len(vals)), key=lambda i: vals[i])
+        pr = [0.0] * len(vals)
+        for rank, i in enumerate(order):
+            pr[i] = rank / (len(vals) - 1) if len(vals) > 1 else 0.5
+        return pr
+
+    rain_r = _pct([clim[c]["rain"] for c in elig])
+    rich_r = _pct([richness.get(c, 0) for c in elig])
+    anomaly = {elig[i]: round(rich_r[i] - rain_r[i], 3) for i in range(len(elig))}
+    return [{"code": c, "richness": richness.get(c, 0),
+             "rainfall": clim.get(c, {}).get("rain"),
+             "cmmt": clim.get(c, {}).get("cmmt"),
+             "anomaly": anomaly.get(c)} for c in sorted(codes)]
 
 
 @router.get("/species-regions")
