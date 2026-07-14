@@ -1,5 +1,21 @@
 # Decisions — Palmae
 
+## 2026-07-14 (enable RLS on all public tables)
+**Decision:** Enable **Row-Level Security on every public table** (all 13) via a new Alembic migration
+(`e7b3a91c4d20`), using plain `ENABLE` with **no policies** — deny-all — rather than adding per-role read
+policies. `spatial_ref_sys` is left alone (PostGIS-managed; already excluded in `alembic/env.py`).
+**Reason:** Supabase's advisor flagged `rls_disabled_in_public` (CRITICAL): with RLS off, anyone holding
+the project's anon key + URL can read/edit/delete every row through the auto-exposed PostgREST API. But
+this app **never uses that surface** — production is fully static baked JSON (Cloudflare Pages, no runtime
+DB), and all ingest/serving runs over the direct `DATABASE_URL` as the `postgres` role, which has
+`BYPASSRLS`. So deny-all closes the anon API completely while leaving the ETL and in-process bake untouched.
+No policies are needed because nothing legitimately reads via PostgREST; `ENABLE` (not `FORCE`) keeps the
+owner/BYPASSRLS path open.
+**Impact:** New migration must be applied to the live Supabase project (`tcsqhxyehkmolpoxwcms`):
+`cd api && alembic upgrade head`. After that the advisor clears. If a future feature needs the PostgREST
+anon API, add explicit `SELECT` policies for the `anon` role then (data is read-only public biodiversity
+data, no PII). The sister Quercus project has the same finding and needs the equivalent fix in its own repo.
+
 ## 2026-07-09 (make the repo public)
 **Decision:** Flip github.com/chrysogonum/palmae from **private to PUBLIC** (MIT code). Keep working-state
 docs local via `.gitignore` (untrack, no history purge).
