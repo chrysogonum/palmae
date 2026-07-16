@@ -1,6 +1,23 @@
 # Validated Facts — Palmae
 *Facts in this file are verified and should NOT be changed without explicit user instruction.*
-*Last updated: 2026-07-09.*
+*Last updated: 2026-07-15.*
+
+## Supabase RLS / Security Advisor (verified 2026-07-15, against the live DB `tcsqhxyehkmolpoxwcms`)
+- Live Alembic head is **`e7b3a91c4d20`** (RLS enabled, deny-all, on all 13 public app tables). Prior head
+  was `0b06d8e2345c` (initial schema).
+- The 13 app tables (taxon, occurrence, …) grant `anon`/`authenticated` **only `REFERENCES, TRIGGER,
+  TRUNCATE`** — **no SELECT/INSERT/UPDATE/DELETE**. The anon key could never read or write app data; enabling
+  RLS on them is hardening, not a real-hole fix, and does **not** clear the advisor.
+- The Security Advisor's only `rls_disabled_in_public` **error is `public.spatial_ref_sys`** (1 error total;
+  all 13 app tables cleared, `alembic_version` not flagged).
+- `spatial_ref_sys` is **owned by `supabase_admin`** (not `postgres`); `anon`/`authenticated` hold full
+  `SELECT, INSERT, UPDATE, DELETE` on it, **granted by `supabase_admin`**. So anon has real *write* access to
+  the PostGIS projection table (public reference data, no app data/PII).
+- **Cannot be fixed from our `postgres` role**: `ALTER TABLE public.spatial_ref_sys ENABLE ROW LEVEL
+  SECURITY` → `ERROR: must be owner of table spatial_ref_sys` (tested in a rolled-back transaction, 2026-07-15).
+  A `REVOKE` from `postgres` removes nothing (postgres isn't the grantor/owner). Only `supabase_admin`
+  (i.e. a Supabase support ticket) or moving PostGIS off `public` could change it. Accepted as a known
+  PostGIS false-positive.
 
 ## Real IUCN Red List v4 (verified 2026-07-09, from the live DB + API)
 - **1,266** palms carry a genuine IUCN category (latest Global assessment, `iucn.py` fetch of family
