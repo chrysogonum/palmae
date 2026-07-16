@@ -4,17 +4,26 @@
 **Decision:** Enable **Row-Level Security on every public table** (all 13) via a new Alembic migration
 (`e7b3a91c4d20`), using plain `ENABLE` with **no policies** — deny-all — rather than adding per-role read
 policies. `spatial_ref_sys` is left alone (PostGIS-managed; already excluded in `alembic/env.py`).
-**Reason:** Supabase's advisor flagged `rls_disabled_in_public` (CRITICAL): with RLS off, anyone holding
-the project's anon key + URL can read/edit/delete every row through the auto-exposed PostgREST API. But
-this app **never uses that surface** — production is fully static baked JSON (Cloudflare Pages, no runtime
-DB), and all ingest/serving runs over the direct `DATABASE_URL` as the `postgres` role, which has
-`BYPASSRLS`. So deny-all closes the anon API completely while leaving the ETL and in-process bake untouched.
-No policies are needed because nothing legitimately reads via PostgREST; `ENABLE` (not `FORCE`) keeps the
-owner/BYPASSRLS path open.
-**Impact:** New migration must be applied to the live Supabase project (`tcsqhxyehkmolpoxwcms`):
-`cd api && alembic upgrade head`. After that the advisor clears. If a future feature needs the PostgREST
-anon API, add explicit `SELECT` policies for the `anon` role then (data is read-only public biodiversity
-data, no PII). The sister Quercus project has the same finding and needs the equivalent fix in its own repo.
+**Reason:** Supabase's advisor flagged `rls_disabled_in_public`, and the migration is reasonable
+defense-in-depth: `ENABLE` (not `FORCE`) keeps the owner/`BYPASSRLS` path open, so ETL and the in-process
+bake (direct `DATABASE_URL` as the `postgres` role) are untouched, while any future anon PostgREST access is
+denied by default.
+**Impact:** Applied to the live Supabase project (`tcsqhxyehkmolpoxwcms`) via `cd api && alembic upgrade head`
+(revision `e7b3a91c4d20`, applied 2026-07-15). If a future feature needs the anon PostgREST API, add explicit
+`SELECT` policies for the `anon` role then (read-only public biodiversity data, no PII).
+
+**Correction (2026-07-15):** The original framing above overstated this. Verified against the live DB: the 13
+app tables never granted `anon`/`authenticated` any data privileges (only `REFERENCES/TRIGGER/TRUNCATE`), so
+the "anyone with the anon key can read/edit/delete every row" premise was **false for the app tables** — the
+anon key could never read or write them. Enabling RLS on them is harmless hardening, **not** the advisor fix,
+and **it does not clear the advisor.** The one public table the anon role can actually read/write is
+`spatial_ref_sys` (PostGIS projection-reference data — public, no app data, no PII), which is owned by
+`supabase_admin` and still has RLS off. We can't fix it from the `postgres` role (can't `ENABLE RLS` on a
+table we don't own; a `REVOKE` from `postgres` removes nothing since `supabase_admin` issued the grants). It
+is the well-known PostGIS false-positive. Resolution: **dismiss/acknowledge the `spatial_ref_sys` finding in
+the Supabase dashboard** (or have Supabase revoke as `supabase_admin`, or relocate PostGIS off `public`).
+The sister Quercus project has the identical situation — apply its migration for parity/hardening, dismiss
+its `spatial_ref_sys` finding the same way.
 
 ## 2026-07-09 (make the repo public)
 **Decision:** Flip github.com/chrysogonum/palmae from **private to PUBLIC** (MIT code). Keep working-state
