@@ -8,7 +8,7 @@ attribution are the bar: every point, branch, and status traces to a published d
 approximation is labelled as one.
 
 > **Status: live, family-complete, deployed.** Served as a fully static site (no runtime server or
-> database) at **https://palmae.pages.dev**. Covers the **2,591 WCVP-accepted species**.
+> database) at **https://palmae.ppr3.com**. Covers the **2,591 WCVP-accepted species**.
 
 ## What it does
 
