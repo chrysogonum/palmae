@@ -236,7 +236,7 @@ export function About({ go, onSource }: { go: PageNav; onSource?: (id: string) =
         </p>
         <p className="page-p" style={{ marginTop: 22 }}>
           Built by{' '}
-          <a href="https://ppr3.com" target="_blank" rel="noreferrer"
+          <a href="https://ppr3.com"
             style={{ color: 'var(--gold)', textDecoration: 'none', borderBottom: '1px solid rgba(217,178,90,.4)' }}>
             Peter&nbsp;Repetti
           </a>.{' '}
